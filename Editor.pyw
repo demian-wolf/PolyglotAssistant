@@ -2,7 +2,7 @@
 from tkinter import *
 from tkinter.messagebox import showinfo, showerror, _show as show_msg
 from tkinter.filedialog import *
-from tkinter.ttk import Treeview
+from tkinter.ttk import Treeview, Entry
 import pickle
 
 from Trainer import Trainer
@@ -49,24 +49,25 @@ class Editor(Tk):
         self.wtree = Treeview(self, show="headings", columns=["word", "translation"], selectmode=EXTENDED)
         self.wtree.heading("word", text="Word")
         self.wtree.heading("translation", text="Translation")
-        self.wtree.grid(row=0, column=0, columnspan=5)
+        self.wtree.grid(row=0, column=0, columnspan=5, sticky="nsew")
+        self.yscrollbar = Scrollbar(self, command=self.wtree.yview)
+        self.yscrollbar.grid(row=0, column=6, sticky="ns")
+        self.wtree.config(yscrollcommand=self.yscrollbar.set)
         Button(self, text="Add", command=self.add).grid(row=1, column=0, sticky="ew")
         Button(self, text="Edit", command=self.edit).grid(row=1, column=1, sticky="ew")
         Button(self, text="Remove", command=self.remove).grid(row=1, column=2, sticky="ew")
         Button(self, text="Clear", command=self.clear).grid(row=1, column=3, sticky="ew")
-        Button(self, text="Train Now!", command=self.train_now).grid(row=1, column=4, sticky="ew")
+        Button(self, text="Train Now!", command=self.train_now).grid(row=1, column=4, columnspan=3, sticky="ew")
 
     def _tocontinue(self):
         if not self.saved:
             result = show_msg("Warning", "Do you want to save your learning plan?", "warning", "yesnocancel")
             if result == "yes":
-                if self.save():
-                    return True
-                return False
+                self.save()
+                return self.saved
             elif result == "no":
                 return True
-            else:
-                return False
+            return False
         return True
 
     def new(self):
@@ -77,17 +78,23 @@ class Editor(Tk):
 
     def open_(self):
         if self._tocontinue():
-            lwp_file = askopenfile(mode="rb", filetypes=[("LearnWords Plan", "*.lwp")])
-            if lwp_file:
-                try:
-                    lwp_data = pickle.load(lwp_file)
-                except:
-                    showerror("Error", "The file is corrupted or has an unsupported format!")
-                else:
-                    if validate_lwp_data(lwp_data):
-                        for pair in lwp_data:
-                            self.wtree.insert("", END, values=pair)
-                        self.set_saved(True)
+            try:
+                lwp_file = askopenfile(mode="rb", filetypes=[("LearnWords Plan", "*.lwp")])
+            except:
+                showerror("Error", "Couldn't open the file. Check file location and your permission to open it.")
+            else:
+                if lwp_file:
+                    try:
+                        lwp_data = pickle.load(lwp_file)
+                    except:
+                        showerror("Error", "The file is corrupted or has an unsupported format!")
+                    else:
+                        if validate_lwp_data(lwp_data):
+                            for pair in lwp_data:
+                                self.wtree.insert("", END, values=pair)
+                            self.set_saved(True)
+                            self.filename = lwp_file.name
+                            self.update_title()
 
     def save(self):
         if self.filename != UNTITLED:
@@ -96,19 +103,14 @@ class Editor(Tk):
                 pickle.dump([self.wtree.item(child)["values"] for child in self.wtree.get_children()], outfile)
                 outfile.close()
                 self.set_saved(True)
-                return True
             except:
                 showerror("Error", "Sorry, an unexpected error occurred!")
-                return False
         else:
-            is_saved = self.save_as()
-            if is_saved:
-                self.set_saved(True)
-            return is_saved
+            self.save_as()
 
     def save_as(self):
         try:
-            outfile = asksaveasfile(mode="wb", filetypes=[("LearnWords Plan", "*.lwp")])
+            outfile = asksaveasfile(mode="wb", defaultextension=".", filetypes=[("LearnWords Plan", ".lwp")])
         except:
             showerror("Error", "Couldn't open the file. Probably, it doesn't exists or you have not permissions")
         else:
@@ -117,10 +119,9 @@ class Editor(Tk):
                     pickle.dump([self.wtree.item(child)["values"] for child in self.wtree.get_children()], outfile)
                 except:
                     showerror("Error", "Sorry, an unexpected error occurred!")
-                    return False
                 else:
                     outfile.close()
-                    return True
+                    self.set_saved(True)
 
     def exit_(self):
         if self._tocontinue():

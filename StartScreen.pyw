@@ -14,7 +14,7 @@ class StartDialog(Tk):
     def create_wgts(self):
         Label(self, text="What do you want to use?", width=20).grid()
         Button(self, text="Editor", width=20, command=self.open_editor).grid()
-        Button(self, text="Trainer", width=20).grid()
+        Button(self, text="Trainer", width=20, command=self.open_trainer).grid()
     def open_editor(self):
         self.withdraw()
         Editor().mainloop()
