@@ -50,9 +50,9 @@ class Editor(Tk):
         self.wtree.heading("word", text="Word")
         self.wtree.heading("translation", text="Translation")
         self.wtree.grid(row=0, column=0, columnspan=5, sticky="nsew")
-        self.yscrollbar = Scrollbar(self, command=self.wtree.yview)
-        self.yscrollbar.grid(row=0, column=6, sticky="ns")
-        self.wtree.config(yscrollcommand=self.yscrollbar.set)
+        self.scrollbar = Scrollbar(self, command=self.wtree.yview)
+        self.scrollbar.grid(row=0, column=6, sticky="ns")
+        self.wtree.config(yscrollcommand=self.scrollbar.set)
         Button(self, text="Add", command=self.add).grid(row=1, column=0, sticky="ew")
         Button(self, text="Edit", command=self.edit).grid(row=1, column=1, sticky="ew")
         Button(self, text="Remove", command=self.remove).grid(row=1, column=2, sticky="ew")
@@ -86,10 +86,16 @@ class Editor(Tk):
                 if lwp_file:
                     try:
                         lwp_data = pickle.load(lwp_file)
-                    except:
-                        showerror("Error", "The file is corrupted or has an unsupported format!")
+                    except PermissionError:
+                        showerror("Error", "Unable to access this file! Check your permissions for reading.")
+                    except pickle.UnpicklingError as error:
+                        showerror("Error", "The file is corrupted or has an unsupported format!\n\nDetails: {}".format(error))
                     else:
-                        if validate_lwp_data(lwp_data):
+                        try:
+                            validate_lwp_data(lwp_data)
+                        except AssertionError:
+                            showerror("Error", "The file is corrupted or has an unsupported format!\n\nDetails: invalid object is pickled.")
+                        else:
                             for pair in lwp_data:
                                 self.wtree.insert("", END, values=pair)
                             self.set_saved(True)
@@ -100,8 +106,9 @@ class Editor(Tk):
         if self.filename != UNTITLED:
             try:
                 outfile = open(self.filename, "wb")
-                pickle.dump([self.wtree.item(child)["values"] for child in self.wtree.get_children()], outfile)
+                pickle.dump([list(map(str, self.wtree.item(child)["values"])) for child in self.wtree.get_children()], outfile)
                 outfile.close()
+                self.filename = outfile.name
                 self.set_saved(True)
             except:
                 showerror("Error", "Sorry, an unexpected error occurred!")
@@ -116,11 +123,12 @@ class Editor(Tk):
         else:
             if outfile:
                 try:
-                    pickle.dump([self.wtree.item(child)["values"] for child in self.wtree.get_children()], outfile)
+                    pickle.dump([list(map(str, self.wtree.item(child)["values"])) for child in self.wtree.get_children()], outfile)
                 except:
                     showerror("Error", "Sorry, an unexpected error occurred!")
                 else:
                     outfile.close()
+                    self.filename = outfile.name
                     self.set_saved(True)
 
     def exit_(self):
