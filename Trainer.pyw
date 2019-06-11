@@ -2,7 +2,7 @@
 from tkinter import *
 from tkinter.messagebox import showinfo, showerror, _show as show_msg
 from tkinter.filedialog import *
-from tkinter.ttk import Treeview, Entry
+from tkinter.ttk import Treeview, Entry, Spinbox
 import pickle
 import os
 
@@ -189,8 +189,9 @@ class HomeFrame(Frame):
         self.total_button = Button(self, bg="white")
         self.total_button.grid(row=1, column=4, sticky="ew")
         Label(self, text="Words per game: ").grid(row=1, column=5, sticky="ew")
-        self.wpg_entry = Entry(self, width=3)
-        self.wpg_entry.grid(row=1, column=6, sticky="ew")
+        self.wpg_var = IntVar(self)
+        self.wpg_var.set(12)
+        Spinbox(self, width=3, from_=1, to=999, textvariable=self.wpg_var, validate="all", validatecommand=(self.master.register(self.validate_wpg), '%P')).grid(row=1, column=6, sticky="ew")
         Button(self, text="Start").grid(row=1, column=7, columnspan=2, sticky="ew")
         self.update_stats(*"????")
         self.get_words_list()
@@ -214,7 +215,6 @@ class HomeFrame(Frame):
         non_tried = 0
         self.wtree.delete(*self.wtree.get_children())
         if self.learning_plan:
-            print(self.users_dict)
             if self.lwp_filename in self.users_dict[self.user]["stats"]:
                 for pair in self.learning_plan:
                     if pair in self.users_dict[self.user]["stats"]["good"]:
@@ -240,5 +240,17 @@ class HomeFrame(Frame):
         self.bad_button["text"] = "Bad: {}".format(bad)
         self.non_tried_button["text"] = "Non-tried: {}".format(non_tried)
         self.total_button["text"] = "Total: {}".format(total)
+
+    def validate_wpg(self, P):
+        valid = False
+        if P.isdigit():
+            if int(P) in range(1, 1000):
+                valid = True
+        elif P == "":
+            valid = True
+        if not valid:
+            self.master.bell()
+        return valid
+
 if __name__ == "__main__":
     Trainer().mainloop()
