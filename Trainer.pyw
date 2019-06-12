@@ -2,74 +2,93 @@
 from tkinter import *
 from tkinter.messagebox import showinfo, showerror, _show as show_msg
 from tkinter.filedialog import *
-from tkinter.ttk import Treeview, Entry, Spinbox
+from tkinter.ttk import Treeview, Entry, Spinbox, Progressbar
+import random
 import pickle
 import os
 
 from utils import yesno2bool, validate_users_dict
 
 
+# TODO: fix lots of skips on a long "Esc" key press
+# TODO: fix back function
+# TODO: add timer and score viewer in the right down corner of the window
+# TODO: add updating of stats after every game
+# TODO: add reverse ("word-translation" pair to "translation-word" pair)
+# TODO: add opening from Editor and from a .lwp file
+# TODO: add sound accompaniment
+# TODO: add config dialog
+# TODO: add hotkeys support
+
 class Trainer(Tk):
     def __init__(self, learning_plan=None, lwp_filename=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.title("Login - LearnWords 1.0 Trainer")
-        self.resizable(False, False)
-        ul_frame = UserLoginFrame()
-        if ul_frame.user.get():
-            HomeFrame(ul_frame.users_dict, ul_frame.user.get(), learning_plan, lwp_filename).grid()
+        self.resizable(False, False) # make the trainer window unresizable
+        self.after(1, lambda: self.focus_force()) # focus to the trainer window on start
+        ul_frame = UserLoginFrame() # create frame for user logging
+        if ul_frame.user.get(): # if user has been logged in,
+            ul_frame.grid_forget() # remove user logging frame from the screen,
+            HomeFrame(ul_frame.users_dict, ul_frame.user.get(), learning_plan, lwp_filename).grid() # and show the home frame
 
 class UserLoginFrame(Frame):
     def __init__(self):
         super().__init__()
-        self.user = StringVar()
-        self.user.set("")
-        self.users_dict = {}
-        self.userslistbox = Listbox(self)
-        self.userslistbox.grid(row=0, column=0, columnspan=6, sticky="nsew")
-        self.userslistbox.bind("<Double-1>", self.login_double_click)
-        self.userslistbox.bind("<Return>", self.login_as_this_user)
-        self.scrollbar = Scrollbar(self, command=self.userslistbox.yview)
-        self.scrollbar.grid(row=0, column=6, sticky="ns")
-        self.userslistbox.config(yscrollcommand=self.scrollbar.set)
-        pwd_frame = Frame(self)
-        Label(pwd_frame, text="Password:").grid(row=0, column=0, sticky="ew")
-        self.pwd_entry = Entry(pwd_frame)
-        self.pwd_entry.grid(row=0, column=1, sticky="ew")
-        pwd_frame.grid(columnspan=5)
+        self.master.title("Login - LearnWords 1.0 Trainer") # set title "Login" to the frame
+        self.user = StringVar(self) # create variable for username
+        self.user.set("") # now username is empty, and it stays empty if user won't log in.
+        self.users_dict = {} # dict for all the users, will be soon read from the "users.dat" file, if it exists
+        self.userslistbox = Listbox(self) # create a listbox for usernames
+        self.userslistbox.grid(row=0, column=0, columnspan=6, sticky="nsew") # grid the listbox
+        self.userslistbox.bind("<Double-1>", self.login_double_click) # log in as the selected user on double click
+        self.userslistbox.bind("<Return>", self.login_as_this_user) # log in as the selected user on "Return" key press
+        self.scrollbar = Scrollbar(self, command=self.userslistbox.yview) # create a scrollbar for the users' list
+        self.scrollbar.grid(row=0, column=6, sticky="ns") # grid the scrollbar
+        self.userslistbox.config(yscrollcommand=self.scrollbar.set) # configure the users' list
+        pwd_frame = Frame(self) # create frame for the password input
+        Label(pwd_frame, text="Password:").grid(row=0, column=0, sticky="ew") # a label, which says "Password:"
+        self.pwd_entry = Entry(pwd_frame) # entry for the password
+        self.pwd_entry.grid(row=0, column=1, sticky="ew") # grid the password entry
+        pwd_frame.grid(columnspan=5) # grid password frame
+        # create the buttons
         Button(self, text="Login as this user", command=self.login_as_this_user).grid(row=2, column=0, sticky="ew")
         Button(self, text="Add a new user", command=self.add_a_new_user).grid(row=2, column=1, sticky="ew")
         Button(self, text="Remove this user", command=self.remove_this_user).grid(row=2, column=2, sticky="ew")
         Button(self, text="Cancel", command=self.master.destroy).grid(row=2, column=3, columnspan=2, sticky="ew")
-        self.update_ulist()
-        self.grid()
-        self.wait_variable(self.user)
+        self.update_ulist() # update user list (it is empty)
+        self.grid() # grid this frame in the master window
+        self.wait_variable(self.user) # wait (don't return anything) while the user won't log in
     def login_double_click(self, event):
-        if event.y <= 17 * self.userslistbox.size():
-            self.login_as_this_user()
+        if event.y <= 17 * self.userslistbox.size(): # if the mouse y clicked on the users' list belongs to any username
+            self.login_as_this_user() # login as the selected usere
     def login_as_this_user(self, event=None):
-        selection = self.userslistbox.curselection()
-        if selection:
-            selected_user = self.userslistbox.get(selection[0])
-            if self.pwd_entry.get() == self.users_dict[selected_user]["password"]:
-                self.user.set(selected_user)
-                self.destroy()
+        selection = self.userslistbox.curselection() # get user's selection
+        if selection: # if any user is selected,
+            selected_user = self.userslistbox.get(selection[0]) # get the first (the single one) element from selection
+            if self.pwd_entry.get() == self.users_dict[selected_user]["password"]: # if right password is entered
+                self.user.set(selected_user) # return (see "wait_variable" above) the username of the selected user
             else:
+                # if the wrong password entered
                 showerror("Error", "Unfortunately, you entered the wrong password! Try again, please.")
         else:
+            # if user was not selected, show an appropriate message
             showinfo("Information", "Choose a user at first. If there is no users in the list, add a new one.")
     def add_a_new_user(self):
-        udata = AddUser().data
-        if udata:
-            if "users.dat" in os.listdir(os.path.curdir):
+        udata = AddUser().data  # get the user's data - (name, password) if wasn't canceled, None otherwise
+        if udata:  # if the new user's adding was not canceled,
+            if "users.dat" in os.listdir(os.path.curdir): # if there is "users.dat" in the app path already
                 try:
-                    ulist = pickle.load(open("users.dat", "rb"))
+                    ulist = pickle.load(open("users.dat", "rb")) # try to read it,
                 except:
-                    ulist = {}
+                    showerror("Error", "")  # if read failed, show an appropriate error,
+                    ulist = {}  # and create an empty users' dictionary
             else:
-                ulist = {}
-            ulist[udata[0]] = {"password": udata[1], "stats": {}}
-            pickle.dump(ulist, open("users.dat", "wb"))
-        self.update_ulist()
+                ulist = {} # if there is no "users.dat" in the app path, create a new users' dictionary
+            ulist[udata[0]] = {"password": udata[1], "stats": {}}  # assign new user's name with his password and stats
+            try:
+                pickle.dump(ulist, open("users.dat", "wb")) # dump it all into new "users.dat" file
+            except:
+                showerror("Error", "Unable to dump the user's data to \"users.dat\"! His/her data won't be saved now")
+        self.update_ulist() # update the users' list
     def remove_this_user(self):
         if self.userslistbox.curselection():
             selected_user = self.userslistbox.get(self.userslistbox.curselection()[0])
@@ -150,6 +169,9 @@ class HomeFrame(Frame):
     def __init__(self, users_dict, user, lwp_filename, learning_plan, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.master.title("Home ({}) - LearnWords 1.0".format(user))
+        self.good = None
+        self.bad = None
+        self.non_tried = None
         self.users_dict = users_dict
         self.user = user
         self.learning_plan = learning_plan
@@ -179,7 +201,7 @@ class HomeFrame(Frame):
         self.yscrollbar.grid(row=0, column=8, sticky="ns")
         self.wtree.config(yscrollcommand=self.yscrollbar.set)
 
-        Button(self, text="⏎").grid(row=1, column=0, sticky="ew")
+        Button(self, text="⏎", command=self.back).grid(row=1, column=0, sticky="ew")
         self.good_button = Button(self, bg="green")
         self.good_button.grid(row=1, column=1, sticky="ew")
         self.bad_button = Button(self, bg="red")
@@ -191,13 +213,14 @@ class HomeFrame(Frame):
         Label(self, text="Words per game: ").grid(row=1, column=5, sticky="ew")
         self.wpg_var = IntVar(self)
         self.wpg_var.set(12)
-        Spinbox(self, width=3, from_=1, to=999, textvariable=self.wpg_var, validate="all", validatecommand=(self.master.register(self.validate_wpg), '%P')).grid(row=1, column=6, sticky="ew")
-        Button(self, text="Start").grid(row=1, column=7, columnspan=2, sticky="ew")
-        self.update_stats(*"????")
+        Spinbox(self, width=3, from_=1, to_=999, textvariable=self.wpg_var, validate="all", validatecommand=(self.master.register(self.validate_wpg), '%P')).grid(row=1, column=6, sticky="ew")
+        Button(self, text="Start", command=self.start).grid(row=1, column=7, columnspan=2, sticky="ew")
+        self.update_stats()
         self.get_words_list()
+
     def open_lwp(self):
         try:
-            file = askopenfile(mode="rb")
+            file = askopenfile(mode="rb") #TODO: Filetypes
         except:
             showerror("Error", "Unable to open this file!")
         else:
@@ -210,47 +233,144 @@ class HomeFrame(Frame):
                 self.lwp_filename = file.name
 
     def get_words_list(self):
-        good = 0
-        bad = 0
-        non_tried = 0
+        self.good = []
+        self.bad = []
+        self.non_tried = []
         self.wtree.delete(*self.wtree.get_children())
         if self.learning_plan:
             if self.lwp_filename in self.users_dict[self.user]["stats"]:
                 for pair in self.learning_plan:
                     if pair in self.users_dict[self.user]["stats"]["good"]:
                         self.wtree.insert("", END, values=pair, tag="good")
-                        good += 1
+                        self.good.append(pair)
                     elif pair in self.users_dict[self.user]["stats"]["bad"]:
                         self.wtree.insert("", END, values=pair, tags=("bad", ))
-                        bad += 1
+                        self.bad.append(pair)
                     else:
                         self.wtree.insert("", END, values=pair, tags=("non-tried"))
-                        non_tried += 1
+                        self.non_tried.append(pair)
             else:
                 for pair in self.learning_plan:
                     self.wtree.insert("", END, values=pair, tags=("non-tried", ))
-                    non_tried += 1
+                    self.non_tried.append(pair)
             self.wtree.tag_configure("good", background="green")
             self.wtree.tag_configure("bad", background="red")
             self.wtree.tag_configure("non-tried", background="yellow")
-            self.update_stats(good, bad, non_tried, len(self.wtree.get_children()))
+            self.update_stats()
 
-    def update_stats(self, good, bad, non_tried, total):
-        self.good_button["text"] = "Good: {}".format(good)
-        self.bad_button["text"] = "Bad: {}".format(bad)
-        self.non_tried_button["text"] = "Non-tried: {}".format(non_tried)
-        self.total_button["text"] = "Total: {}".format(total)
+    def update_stats(self):
+        if self.good or self.bad or self.non_tried:
+            self.good_button["text"] = "Good: {}".format(len(self.good))
+            self.bad_button["text"] = "Bad: {}".format(len(self.bad))
+            self.non_tried_button["text"] = "Non-tried: {}".format(len(self.non_tried))
+            self.total_button["text"] = "Total: {}".format(len(self.wtree.get_children()))
+        else:
+            self.good_button["text"] = "Good: {}".format("?")
+            self.bad_button["text"] = "Bad: {}".format("?")
+            self.non_tried_button["text"] = "Non-tried: {}".format("?")
+            self.total_button["text"] = "Total: {}".format("?")
 
     def validate_wpg(self, P):
+        # TODO: make normal number ranges.
         valid = False
+        if self.learning_plan:
+            to = 1000 if len(self.learning_plan) > 999 else len(self.learning_plan) + 1
+        else:
+            to = 1000
         if P.isdigit():
-            if int(P) in range(1, 1000):
+            if int(P) in range(1, to):
                 valid = True
         elif P == "":
             valid = True
         if not valid:
             self.master.bell()
+        print(valid, to)
         return valid
+
+    def back(self):
+        self.master.destroy()
+        Trainer(self.learning_plan, self.lwp_filename)
+
+    def start(self):
+        if self.good or self.bad or self.non_tried:
+            self.master.config(menu=Menu())
+            self.grid_remove()
+            StartFrame(self.good, self.bad, self.non_tried).grid()
+        else:
+            showerror("Error", "Before you start, open your learning plan file.\nTo create a new learning plan, create it using Editor")
+
+class StartFrame(Frame):
+    def __init__(self, good, bad, non_tried, *args, **kwargs):
+        super().__init__()
+        self.master.title("Gym - LearnWords 1.0")
+        self.score = 0
+        random.shuffle(good)
+        random.shuffle(bad)
+        random.shuffle(non_tried)
+        self.queue = non_tried + 2 * bad + good
+        self.word = None
+        self.word_label = Label(self)
+        self.word_label.grid(row=0, column=0, columnspan=5, sticky="ew")
+        self.time_pb = Progressbar(self)
+        self.time_pb.grid(row=1, column=0, columnspan=5, sticky="nsew")
+        Button(self, text="⏎", command=self.back).grid(row=2, column=0, sticky="ew")
+        Label(self, text="Translation: ").grid(row=2, column=1, sticky="ew")
+        self.translation_entry = Entry(self)
+        self.translation_entry.grid(row=2, column=2, sticky="ew")
+        self.translation_entry.focus()
+        self.translation_entry.bind("<Return>", self.ok)
+        self.translation_entry.bind("<Escape>", self.skip)
+        self.ok_button = Button(self, text="OK", command=self.ok)
+        self.ok_button.grid(row=2, column=3, sticky="ew")
+        self.skip_button = Button(self, text="Skip", command=self.skip)
+        self.skip_button.grid(row=2, column=4, sticky="ew")
+        self.pass_a_word()
+
+    def pass_a_word(self):
+        if self.queue:
+            self.ok_button["state"] = "normal"
+            self.skip_button["state"] = "normal"
+            self.translation_entry["state"] = "normal"
+            self.word = self.queue.pop(0)
+            self.word_label["text"] = self.word[0]
+            self.time_pb.start(100)
+            self.tg_after = self.after(9900, self.timeout)
+        else:
+            self.word_label["text"] = "Hooray! You've shot all the words!"
+            self.translation_entry["state"] = "disabled"
+            self.ok_button["state"] = "disabled"
+            self.skip_button["state"] = "disabled"
+            self.after(3000, self.back)
+
+    def back(self):
+        self.destroy()
+
+    def ok(self, event=None):
+        if self.translation_entry.get().replace("ё", "е").replace("Ё", "Е") == self.word[1].replace("ё", "е").replace("Ё", "Е"):
+            self.translation_entry.delete(0, END)
+            self.score += 1
+            self.time_pb.stop()
+            self.after_cancel(self.tg_after)
+            self.pass_a_word()
+        else:
+            pass
+
+    def _skip(self, action):
+        self.time_pb.stop()
+        self.word_label["text"] = "Oops! {} \"{}\" <=> \"{}\"".format(action, *self.word)
+        self.translation_entry["state"] = "disabled"
+        self.ok_button["state"] = "disabled"
+        self.skip_button["state"] = "disabled"
+        for i in range(2):
+            self.queue.append(self.word)
+        self.after(3000, self.pass_a_word)
+
+    def skip(self, event=None):
+        self.after_cancel(self.tg_after)
+        self._skip("Skip?")
+
+    def timeout(self):
+        self._skip("Timeout!")
 
 if __name__ == "__main__":
     Trainer().mainloop()
