@@ -261,9 +261,10 @@ class HomeFrame(Frame):
         Label(self, text="Words per game: ").grid(row=1, column=5, sticky="ew")  # create label "Words per game:"
         self.wpg_var = IntVar(self)  # create variable for quantity of words
         self.wpg_var.set(12)  # set it 12 by default
-        Spinbox(self, width=3, from_=1, to_=999, textvariable=self.wpg_var,
-                validate="all", validatecommand=(self.master.register(self.validate_wpg), '%P')) \
-            .grid(row=1, column=6, sticky="ew")  # create the words per game spinbox
+        self.wpg_spb = Spinbox(self, width=3, from_=1, to_=999, textvariable=self.wpg_var,
+                validate="all", validatecommand=(self.master.register(self.validate_wpg), '%P'))
+        self.wpg_spb.grid(row=1, column=6, sticky="ew")  # create the words per game spinbox
+        self.wpg_spb.bind("<Return>", self.start)
         Button(self, text="Start", command=self.start) \
             .grid(row=1, column=7, columnspan=2, sticky="ew")  # create the start button
         self.update_stats()  # get stats for this user
@@ -295,7 +296,13 @@ class HomeFrame(Frame):
                     # if it is a valid learning plan,
                     self.get_words_list()  # get words list from the learning plan,
                     self.lwp_filename = file.name  # and set up the filename attribute
-
+                    lwp_len = len(self.learning_plan)
+                    if len(self.learning_plan) > 12:
+                        self.wpg_var.set(12)
+                        self.wpg_spb.configure(to=lwp_len if lwp_len < 1000 else 999)
+                    else:
+                        self.wpg_var.set(lwp_len)
+                        self.wpg_spb.configure(to=lwp_len)
     def get_words_list(self):
         # clear all the words' lists (good, bad and non_tried),
         self.good.clear()
@@ -337,27 +344,19 @@ class HomeFrame(Frame):
         self.total_button["text"] = "Total: {}".format(total)
 
     def validate_wpg(self, P):
-        # TODO: normal number ranges.
-        valid = False
-        if self.learning_plan:
-            to = 1000 if len(self.learning_plan) > 999 else len(self.learning_plan) + 1
-        else:
-            to = 1000
         if P.isdigit():
-            if int(P) in range(1, to):
-                valid = True
+            if int(P) in range(1, self.wpg_spb["to"] + 1):
+                return True
         elif P == "":
-            valid = True
-        if not valid:
-            self.master.bell()
-        print(valid, to)
-        return valid
+            return True
+        self.master.bell()
+        return False
 
     def back(self):
         self.master.destroy()
         Trainer(self.learning_plan, self.lwp_filename)
 
-    def start(self):
+    def start(self, event=None):
         if self.lwp_filename:  # if any learning plan is opened,
             self.master.config(menu=Menu())  # hide the menu,
             self.grid_remove()  # and hide this frame
