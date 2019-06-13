@@ -204,6 +204,7 @@ class Edit(Toplevel):
     def __init__(self, title, word=None, translation=None):
         super().__init__()
         self.after(1, lambda: self.focus_force())
+        self.grab_set()
         self.title(title)
         self.resizable(False, False)
         Label(self, text="Word:").grid(row=0, column=0)
@@ -225,6 +226,7 @@ class Edit(Toplevel):
 
     def ok(self, event=None):
         self.data = (self.word_entry.get(), self.translation_entry.get())
+        self.grab_release()
         self.destroy()
 
 
