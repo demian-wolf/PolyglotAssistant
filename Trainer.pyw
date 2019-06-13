@@ -2,7 +2,11 @@
 from tkinter import *
 from tkinter.messagebox import showinfo, showerror, _show as show_msg
 from tkinter.filedialog import *
-from tkinter.ttk import Treeview, Entry, Spinbox, Progressbar
+from tkinter.ttk import Treeview, Entry, Progressbar
+try:
+    from tkinter.ttk import Spinbox
+except ImportError:
+    pass
 import random
 import pickle
 import os
@@ -49,6 +53,7 @@ class UserLoginFrame(Frame):
         Label(pwd_frame, text="Password:").grid(row=0, column=0, sticky="ew") # a label, which says "Password:"
         self.pwd_entry = Entry(pwd_frame, show="*") # entry for the password
         self.pwd_entry.grid(row=0, column=1, sticky="ew") # grid the password entry
+        self.pwd_entry.bind("<Return>", self.login_as_this_user)
         pwd_frame.grid(columnspan=5) # grid password frame
         # create the buttons
         Button(self, text="Login as this user", command=self.login_as_this_user).grid(row=2, column=0, sticky="ew")
