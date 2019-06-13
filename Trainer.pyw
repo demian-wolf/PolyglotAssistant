@@ -1,17 +1,23 @@
 #!/usr/bin/python3
+
+# Sound was taken from Scratch 1.4 and https://noisefx.ru/
 from tkinter import *
 from tkinter.messagebox import showinfo, showerror, _show as show_msg
 from tkinter.filedialog import *
 from tkinter.ttk import Treeview, Entry, Progressbar
+
 try:
+    # if Python >= 3.7:
     from tkinter.ttk import Spinbox
 except ImportError:
+    # otherwise
     pass
+import winsound
 import random
 import pickle
 import os
 
-from utils import yesno2bool, validate_users_dict
+from utils import yesno2bool, validate_users_dict, validate_lwp_data
 
 
 # TODO: fix lots of skips on a long "Esc" key press
@@ -20,7 +26,6 @@ from utils import yesno2bool, validate_users_dict
 # TODO: add updating of stats after every game
 # TODO: add reverse ("word-translation" pair to "translation-word" pair)
 # TODO: add opening from Editor and from a .lwp file
-# TODO: add sound accompaniment
 # TODO: add config dialog
 # TODO: add hotkeys support
 # TODO: fix word per game (if words < 12, set wpg to amout of words)
@@ -28,112 +33,117 @@ from utils import yesno2bool, validate_users_dict
 class Trainer(Tk):
     def __init__(self, learning_plan=None, lwp_filename=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.resizable(False, False) # make the trainer window unresizable
-        self.after(1, lambda: self.focus_force()) # focus to the trainer window on start
-        ul_frame = UserLoginFrame() # create frame for user logging
-        if ul_frame.user.get(): # if user has been logged in,
-            ul_frame.grid_forget() # remove user logging frame from the screen,
-            HomeFrame(ul_frame.users_dict, ul_frame.user.get(), learning_plan, lwp_filename).grid() # and show the home frame
+        self.resizable(False, False)  # make the trainer window unresizable
+        self.after(1, lambda: self.focus_force())  # focus to the trainer window on start
+        ul_frame = UserLoginFrame()  # create frame for user logging
+        if ul_frame.user.get():  # if user has been logged in,
+            ul_frame.grid_forget()  # remove user logging frame from the screen,
+            HomeFrame(ul_frame.users_dict, ul_frame.user.get(), learning_plan,
+                      lwp_filename).grid()  # and show the home frame
+
 
 class UserLoginFrame(Frame):
     def __init__(self):
         super().__init__()
-        self.master.title("Login - LearnWords 1.0 Trainer") # set title "Login" to the frame
-        self.user = StringVar(self) # create variable for username
-        self.user.set("") # now username is empty, and it stays empty if user won't log in.
-        self.users_dict = {} # dict for all the users, will be soon read from the "users.dat" file, if it exists
-        self.userslistbox = Listbox(self) # create a listbox for usernames
-        self.userslistbox.grid(row=0, column=0, columnspan=6, sticky="nsew") # grid the listbox
-        self.userslistbox.bind("<Double-1>", self.login_double_click) # log in as the selected user on double click
-        self.userslistbox.bind("<Return>", self.login_as_this_user) # log in as the selected user on "Return" key press
-        self.scrollbar = Scrollbar(self, command=self.userslistbox.yview) # create a scrollbar for the users' list
-        self.scrollbar.grid(row=0, column=6, sticky="ns") # grid the scrollbar
-        self.userslistbox.config(yscrollcommand=self.scrollbar.set) # configure the users' list
-        pwd_frame = Frame(self) # create frame for the password input
-        Label(pwd_frame, text="Password:").grid(row=0, column=0, sticky="ew") # a label, which says "Password:"
-        self.pwd_entry = Entry(pwd_frame, show="*") # entry for the password
-        self.pwd_entry.grid(row=0, column=1, sticky="ew") # grid the password entry
+        self.master.title("Login - LearnWords 1.0 Trainer")  # set title "Login" to the frame
+        self.user = StringVar(self)  # create variable for username
+        self.user.set("")  # now username is empty, and it stays empty if user won't log in.
+        self.users_dict = {}  # dict for all the users, will be soon read from the "users.dat" file, if it exists
+        self.userslistbox = Listbox(self)  # create a listbox for usernames
+        self.userslistbox.grid(row=0, column=0, columnspan=6, sticky="nsew")  # grid the listbox
+        self.userslistbox.bind("<Double-1>", self.login_double_click)  # log in as the selected user on double click
+        self.userslistbox.bind("<Return>", self.login_as_this_user)  # log in as the selected user on "Return" key press
+        self.scrollbar = Scrollbar(self, command=self.userslistbox.yview)  # create a scrollbar for the users' list
+        self.scrollbar.grid(row=0, column=6, sticky="ns")  # grid the scrollbar
+        self.userslistbox.config(yscrollcommand=self.scrollbar.set)  # configure the users' list
+        pwd_frame = Frame(self)  # create frame for the password input
+        Label(pwd_frame, text="Password:").grid(row=0, column=0, sticky="ew")  # a label, which says "Password:"
+        self.pwd_entry = Entry(pwd_frame, show="*")  # entry for the password
+        self.pwd_entry.grid(row=0, column=1, sticky="ew")  # grid the password entry
         self.pwd_entry.bind("<Return>", self.login_as_this_user)
-        pwd_frame.grid(columnspan=5) # grid password frame
+        pwd_frame.grid(columnspan=5)  # grid password frame
         # create the buttons
         Button(self, text="Login as this user", command=self.login_as_this_user).grid(row=2, column=0, sticky="ew")
         Button(self, text="Add a new user", command=self.add_a_new_user).grid(row=2, column=1, sticky="ew")
         Button(self, text="Remove this user", command=self.remove_this_user).grid(row=2, column=2, sticky="ew")
         Button(self, text="Cancel", command=self.master.destroy).grid(row=2, column=3, columnspan=2, sticky="ew")
-        self.update_ulist() # update user list (it is empty)
-        self.grid() # grid this frame in the master window
-        self.wait_variable(self.user) # wait (don't return anything) while the user won't log in
+        self.update_ulist()  # update user list (it is empty)
+        self.grid()  # grid this frame in the master window
+        self.wait_variable(self.user)  # wait (don't return anything) while the user won't log in
+
     def login_double_click(self, event):
-        if event.y <= 17 * self.userslistbox.size(): # if the mouse y clicked on the users' list belongs to any username
-            self.login_as_this_user() # login as the selected usere
+        if event.y <= 17 * self.userslistbox.size():  # if the mouse y on the users' list belongs to any username
+            self.login_as_this_user()  # login as the selected usere
+
     def login_as_this_user(self, event=None):
-        selection = self.userslistbox.curselection() # get user's selection
-        if selection: # if any user is selected,
-            selected_user = self.userslistbox.get(selection[0]) # get the first (the single one) element from selection
-            if self.pwd_entry.get() == self.users_dict[selected_user]["password"]: # if right password is entered
-                self.user.set(selected_user) # return (see "wait_variable" above) the username of the selected user
+        selection = self.userslistbox.curselection()  # get user's selection
+        if selection:  # if any user is selected,
+            selected_user = self.userslistbox.get(selection[0])  # get the first (the single one) element from selection
+            if self.pwd_entry.get() == self.users_dict[selected_user]["password"]:  # if right password is entered
+                self.user.set(selected_user)  # return (see "wait_variable" above) the username of the selected user
             else:
                 # if the wrong password entered
                 showerror("Error", "Unfortunately, you entered the wrong password! Try again, please.")
         else:
             # if user was not selected, show an appropriate message
             showinfo("Information", "Choose a user at first. If there is no users in the list, add a new one.")
+
     def add_a_new_user(self):
         udata = AddUser().data  # get the user's data - (name, password) if wasn't canceled, None otherwise
         if udata:  # if the new user's adding was not canceled,
-            if "users.dat" in os.listdir(os.path.curdir): # if there is "users.dat" in the app path already
+            if "users.dat" in os.listdir(os.path.curdir):  # if there is "users.dat" in the app path already
                 try:
-                    ulist = pickle.load(open("users.dat", "rb")) # try to read it,
+                    ulist = pickle.load(open("users.dat", "rb"))  # try to read it,
                 except:
                     showerror("Error", "")  # if read failed, show an appropriate error,
                     ulist = {}  # and create an empty users' dictionary
             else:
-                ulist = {} # if there is no "users.dat" in the app path, create a new users' dictionary
+                ulist = {}  # if there is no "users.dat" in the app path, create a new users' dictionary
             ulist[udata[0]] = {"password": udata[1], "stats": {}}  # assign new user's name with his password and stats
             try:
-                pickle.dump(ulist, open("users.dat", "wb")) # dump it all into new "users.dat" file
+                pickle.dump(ulist, open("users.dat", "wb"))  # dump it all into new "users.dat" file
             except:
                 showerror("Error", "Unable to dump the user's data to \"users.dat\"! His/her data won't be saved now")
-        self.update_ulist() # update the users' list
+        self.update_ulist()  # update the users' list
+
     def remove_this_user(self):
-        if self.userslistbox.curselection(): # if any user is selected,
-            selected_user = self.userslistbox.get(self.userslistbox.curselection()[0]) # get selected user's name
-            if yesno2bool(show_msg("Warning",
-                                   "This will permanently delete the user with name \"{}\". Do you want to continue?"\
-                                           .format(selected_user), "warning", "yesno")): # if deletion was confirmed,
-                if self.pwd_entry.get() == self.users_dict[selected_user]["password"]: # if the right password entered,
-                    del self.users_dict[selected_user] # delete this user from the users' dict
+        if self.userslistbox.curselection():  # if any user is selected,
+            selected_user = self.userslistbox.get(self.userslistbox.curselection()[0])  # get selected user's name
+            # if deletion was confirmed,
+            if yesno2bool(show_msg("Warning", "This will permanently delete the user with name \"{}\". "
+                                              "Do you want to continue?".format(selected_user), "warning", "yesno")):
+                if self.pwd_entry.get() == self.users_dict[selected_user]["password"]:  # if the right password entered,
+                    del self.users_dict[selected_user]  # delete this user from the users' dict
                     try:
-                        outf = open("users.dat", "wb") # open the "users.dat" with bytes-writing mode,
-                        pickle.dump(self.users_dict, outf) # dump the dictionary
-                        outf.close() # close the "users.dat"
+                        outf = open("users.dat", "wb")  # open the "users.dat" with bytes-writing mode,
+                        pickle.dump(self.users_dict, outf)  # dump the dictionary
+                        outf.close()  # close the "users.dat"
                     except PermissionError:
                         # if there is a PermissionError occured, show an appropriate error.
                         showerror("Error", "Unable to access the user.dat file. Check your permissions for reading.")
-                    self.update_ulist() # update the users' list from the "users.dat"
+                    self.update_ulist()  # update the users' list from the "users.dat"
                 else:
-                    showerror("Error", "Enter the right password!") # if the wrong password is entered, show an error
+                    showerror("Error", "Enter the right password!")  # if the wrong password is entered, show an error
         else:
-            showinfo("Information", "Choose what to remove at first.") # if none is selected, show a message
-
+            showinfo("Information", "Choose what to remove at first.")  # if none is selected, show a message
 
     def update_ulist(self):
-        self.userslistbox.delete(0, END) # clear all the users' list at first
-        if "users.dat" in os.listdir(os.path.curdir): # if there is the "users.dat" file in the app path,
+        self.userslistbox.delete(0, END)  # clear all the users' list at first
+        if "users.dat" in os.listdir(os.path.curdir):  # if there is the "users.dat" file in the app path,
             try:
-                self.users_dict = pickle.load(open("users.dat", "rb")) # try to read the users' dict from the pickle
+                self.users_dict = pickle.load(open("users.dat", "rb"))  # try to read the users' dict from the pickle
             except PermissionError:
                 # if it couldn't open "users.dat" due to permissions error, show an error and exit.
                 showerror("Error", "Couldn't open users.dat. Check your permissions for reading this file and retry.")
                 self.master.destroy()
             except pickle.UnpicklingError as details:
                 # if it couldn't unpickle the "users.dat" - it's damaged, show an error, remove it, and then continue,
-                showerror("Error", "The users.dat is damaged. It'll be removed. Add new users then.\n\nDetails: {}"\
-                          .format(details))
+                showerror("Error", "The users.dat is damaged. It'll be removed."
+                                   " Add new users then.\n\nDetails: {}".format(details))
                 os.remove("users.dat")
             else:
                 try:
-                    validate_users_dict(self.users_dict) # if the users' dict is valid
+                    validate_users_dict(self.users_dict)  # if the users' dict is valid
                 except:
                     # if the users' dict is invalid, show an error, remove the "users.dat" file, and then continue
                     showerror("Error",
@@ -148,49 +158,59 @@ class UserLoginFrame(Frame):
             # show the message about the first run of the program.
             showinfo("Information", "Hello, dear user! Probably, this is the first run of this program."
                                     "\nAt first you need to Add a new user.")
-            self.master.deiconify() # Show the main window now
-        self.userslistbox.focus() # focus on the users' list (to select a user without mouse, only with arrow keys)
+            self.master.deiconify()  # Show the main window now
+        self.userslistbox.focus()  # focus on the users' list (to select a user without mouse, only with arrow keys)
         # And now select the first user from the list using .select_set(0) and .activate(0)
         self.userslistbox.select_set(0)
         self.userslistbox.activate(0)
 
+
 class AddUser(Toplevel):
     def __init__(self):
         super().__init__()
-        self.resizable(False, False) # make this dialog unresizable
-        self.transient(self.master) # make it transient from its master (self.master)
-        self.title("Add User") # set the title of the dialog to "Add User"
-        self.grab_set() # set grab to disable the master window controls while adding a new user
-        self.data = None # now data is None
-        Label(self, text="Username:").grid(row=0, column=0) # create label with text "Username:"
-        self.username_entry = Entry(self) # create entry for the username,
-        self.username_entry.grid(row=0, column=1) # grid this entry,
-        self.username_entry.focus() # and focus on it
-        Label(self, text="Password:").grid(row=1, column=0) # create label with text "Password:"
-        self.pwd_entry = Entry(self, show="*") # create entry for the password,
-        self.pwd_entry.grid(row=1, column=1) # grid this entry
+        self.resizable(False, False)  # make this dialog unresizable
+        self.transient(self.master)  # make it transient from its master (self.master)
+        self.title("Add User")  # set the title of the dialog to "Add User"
+        self.grab_set()  # set grab to disable the master window controls while adding a new user
+        self.data = None  # now data is None
+        Label(self, text="Username:").grid(row=0, column=0)  # create label with text "Username:"
+        self.username_entry = Entry(self)  # create entry for the username,
+        self.username_entry.grid(row=0, column=1)  # grid this entry,
+        self.username_entry.focus()  # and focus on it
+        Label(self, text="Password:").grid(row=1, column=0)  # create label with text "Password:"
+        self.pwd_entry = Entry(self, show="*")  # create entry for the password,
+        self.pwd_entry.grid(row=1, column=1)  # grid this entry
         # when the username is entered and the user press "Enter" ("Return") key, Tkinter focus on the password entry
         self.username_entry.bind("<Return>", lambda event=None: self.pwd_entry.focus())
         # when both the username and the password are entered, app will submit the user's data on "Enter"
         self.pwd_entry.bind("<Return>", self.ok)
-        Button(self, text="OK", command=self.ok).grid(row=2, column=0, sticky="ew") # create "OK" button
-        Button(self, text="Cancel", command=self.destroy).grid(row=2, column=1, sticky="ew") # create "Cancel" button
-        self.wait_window() # doesn't returns anything while the window is not destroyed
+        Button(self, text="OK", command=self.ok).grid(row=2, column=0, sticky="ew")  # create "OK" button
+        Button(self, text="Cancel", command=self.destroy).grid(row=2, column=1, sticky="ew")  # create "Cancel" button
+        self.wait_window()  # doesn't returns anything while the window is not destroyed
+
     def ok(self, event=None):
-        if not self.username_entry.get(): # if the user skipped username entry, give him a warning
-            if not yesno2bool(show_msg("Warning", "It's highly unrecommended to create users with empty usernames. Do you want to continue?", "warning", "yesno")):
+        if not self.username_entry.get():  # if the user skipped username entry, give him a warning
+            if not yesno2bool(show_msg("Warning",
+                                       "It's highly unrecommended to create users with empty usernames. "
+                                       "Do you want to continue?",
+                                       "warning", "yesno")):
                 return
-        if not self.pwd_entry.get(): # if the user skipped password entry, give him a warning
-            if not yesno2bool(show_msg("Warning", "It's highly unrecommended to create users with empty passwords. Everyone can change your statistics (by doing your exercises) or even remove your user account at all! Do you want to continue?", "warning", "yesno")):
+        if not self.pwd_entry.get():  # if the user skipped password entry, give him a warning
+            if not yesno2bool(show_msg("Warning",
+                                       "It's highly unrecommended to create users with empty passwords. "
+                                       "Everyone can change your statistics (by doing your exercises) or even remove "
+                                       "your user account at all! Do you want to continue?",
+                                       "warning", "yesno")):
                 return
-        self.data = self.username_entry.get(), self.pwd_entry.get() # set user's data according to entries' values
-        self.grab_release() # release grab to allow usage of the master window again
-        self.destroy() # destroys the dialog
+        self.data = self.username_entry.get(), self.pwd_entry.get()  # set user's data according to entries' values
+        self.grab_release()  # release grab to allow usage of the master window again
+        self.destroy()  # destroys the dialog
+
 
 class HomeFrame(Frame):
     def __init__(self, users_dict, user, lwp_filename, learning_plan, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.master.title("Home ({}) - LearnWords 1.0".format(user)) # set master window's title
+        self.master.title("Home ({}) - LearnWords 1.0".format(user))  # set master window's title
         # create lists for good, bad, and non-tried words
         self.good = []
         self.bad = []
@@ -217,89 +237,107 @@ class HomeFrame(Frame):
         self.helpmenu.add_command(label="About LearnWords")
         self.helpmenu.add_command(label="Contact me")
         self.menubar.add_cascade(label="Help", menu=self.helpmenu)
-        self.master.config(menu=self.menubar) # set master window's menu = self.menubar
+        self.master.config(menu=self.menubar)  # set master window's menu = self.menubar
 
-        # create and configure Treeview for showing the words pairs
+        # create and configure treeview for showing the words pairs
         self.wtree = Treeview(self, show="headings", columns=["word", "translation"], selectmode=EXTENDED)
         self.wtree.heading("word", text="Word")
         self.wtree.heading("translation", text="Translation")
-        self.wtree.grid(row=0, column=0, columnspan=8, sticky="ew") # grid it to the screen
+        self.wtree.grid(row=0, column=0, columnspan=8, sticky="ew")  # grid it to the screen
         # create, grid, and configure self.scrollbar)
         self.scrollbar = Scrollbar(self, command=self.wtree.yview)
         self.scrollbar.grid(row=0, column=8, sticky="ns")
         self.wtree.config(yscrollcommand=self.scrollbar.set)
 
         Button(self, text="⏎", command=self.back).grid(row=1, column=0, sticky="ew")  # create "Back" button
-        self.good_button = Button(self, bg="green") # create button for good words pairs,
-        self.good_button.grid(row=1, column=1, sticky="ew") # and grid it on the master window
-        self.bad_button = Button(self, bg="red") # create button for bad words pairs,
-        self.bad_button.grid(row=1, column=2, sticky="ew") # and grid it on the master window
+        self.good_button = Button(self, bg="green")  # create button for good words pairs,
+        self.good_button.grid(row=1, column=1, sticky="ew")  # and grid it on the master window
+        self.bad_button = Button(self, bg="red")  # create button for bad words pairs,
+        self.bad_button.grid(row=1, column=2, sticky="ew")  # and grid it on the master window
         self.non_tried_button = Button(self, bg="yellow")  # create button for non-tried words,
         self.non_tried_button.grid(row=1, column=3, sticky="ew")  # and grid it on the master window
         self.total_button = Button(self, bg="white")  # create button for total quantity of words,
-        self.total_button.grid(row=1, column=4, sticky="ew") # and grid it on the master window
+        self.total_button.grid(row=1, column=4, sticky="ew")  # and grid it on the master window
         Label(self, text="Words per game: ").grid(row=1, column=5, sticky="ew")  # create label "Words per game:"
-        self.wpg_var = IntVar(self) # create variable for quantity of words
-        self.wpg_var.set(12) # set it 12 by default
-        Spinbox(self, width=3, from_=1, to_=999, textvariable=self.wpg_var, validate="all", validatecommand=(self.master.register(self.validate_wpg), '%P')).grid(row=1, column=6, sticky="ew")
-        Button(self, text="Start", command=self.start).grid(row=1, column=7, columnspan=2, sticky="ew")
-        self.update_stats()
-        self.get_words_list()
+        self.wpg_var = IntVar(self)  # create variable for quantity of words
+        self.wpg_var.set(12)  # set it 12 by default
+        Spinbox(self, width=3, from_=1, to_=999, textvariable=self.wpg_var,
+                validate="all", validatecommand=(self.master.register(self.validate_wpg), '%P')) \
+            .grid(row=1, column=6, sticky="ew")  # create the words per game spinbox
+        Button(self, text="Start", command=self.start) \
+            .grid(row=1, column=7, columnspan=2, sticky="ew")  # create the start button
+        self.update_stats()  # get stats for this user
+        self.get_words_list()  # get words' list
 
     def open_lwp(self):
         try:
-            file = askopenfile(mode="rb") #TODO: Filetypes
+            # try to open this file
+            file = askopenfile(mode="rb", filetypes=[("Learn Words Plan", ".lwp")])
         except:
+            # if couldn't, show an error message
             showerror("Error", "Unable to open this file!")
         else:
             try:
+                # try to load learning plan from the file
                 self.learning_plan = pickle.load(file)
             except pickle.UnpicklingError as error:
+                # if couldn't unpickle it, show an error message
                 showerror("Error", "Unable to open the file!\n\nDetails: {}".format(error))
             else:
-                self.get_words_list()
-                self.lwp_filename = file.name
+                try:
+                    # validate the learning plan data, if the app could unpickle something
+                    validate_lwp_data(self.learning_plan)
+                except AssertionError:
+                    # if this is invalid learning plan data, show an error message
+                    showerror("Error",
+                              "Unable to open the file!\n\nDetails: it doesn't looks like a valid learning plan file!")
+                else:
+                    # if it is a valid learning plan,
+                    self.get_words_list()  # get words list from the learning plan,
+                    self.lwp_filename = file.name  # and set up the filename attribute
 
     def get_words_list(self):
+        # clear all the words' lists (good, bad and non_tried),
         self.good.clear()
         self.bad.clear()
         self.non_tried.clear()
-        self.wtree.delete(*self.wtree.get_children())
-        if self.learning_plan:
-            if self.lwp_filename in self.users_dict[self.user]["stats"]:
-                for pair in self.learning_plan:
-                    if pair in self.users_dict[self.user]["stats"]["good"]:
-                        self.wtree.insert("", END, values=pair, tag="good")
-                        self.good.append(pair)
-                    elif pair in self.users_dict[self.user]["stats"]["bad"]:
-                        self.wtree.insert("", END, values=pair, tags=("bad", ))
-                        self.bad.append(pair)
+        self.wtree.delete(*self.wtree.get_children())  # and clear the list with the previous learning plan words' pairs
+        if self.learning_plan:  # if any learning plan is opened,
+            if self.lwp_filename in self.users_dict[self.user]["stats"]:  # if the user trained this file before
+                for pair in self.learning_plan:  # check every pair,
+                    if pair in self.users_dict[self.user]["stats"]["good"]:  # if it is in the list of the "good" pairs,
+                        self.wtree.insert("", END, values=pair, tag="good")  # add it to the pairs' list with tag "good"
+                        self.good.append(pair)  # append pair to the list for good words' pairs
+                    elif pair in self.users_dict[self.user]["stats"]["bad"]:  # if it is in the list of the "bad" pairs,
+                        self.wtree.insert("", END, values=pair, tag="bad")  # add it in the  list with tag "bad"
+                        self.bad.append(pair)  # append pair to the list for bad words' pairs
                     else:
-                        self.wtree.insert("", END, values=pair, tags=("non-tried"))
-                        self.non_tried.append(pair)
+                        # if the word wasn't trained yet,
+                        self.wtree.insert("", END, values=pair,
+                                          tag="non-tried")  # add it to the list with "non-tried" tag
+                        self.non_tried.append(pair)  # append the pair to the list for non-tried words' pairs
             else:
-                for pair in self.learning_plan:
-                    self.wtree.insert("", END, values=pair, tags=("non-tried", ))
-                    self.non_tried.append(pair)
+                # if the user opened this learning plan at first
+                for pair in self.learning_plan:  # add every pair
+                    self.wtree.insert("", END, values=pair,
+                                      tag="non-tried")  # to the pairs' list with "non-tried" tag,
+                    self.non_tried.append(pair)  # and append to the list for non-tried words' pairs
+            # set appropriate colors to every word's pair        
             self.wtree.tag_configure("good", background="green")
             self.wtree.tag_configure("bad", background="red")
             self.wtree.tag_configure("non-tried", background="yellow")
-            self.update_stats()
+            self.update_stats()  # and update the stats (buttons labels)
 
     def update_stats(self):
-        if self.good or self.bad or self.non_tried:
-            self.good_button["text"] = "Good: {}".format(len(self.good))
-            self.bad_button["text"] = "Bad: {}".format(len(self.bad))
-            self.non_tried_button["text"] = "Non-tried: {}".format(len(self.non_tried))
-            self.total_button["text"] = "Total: {}".format(len(self.wtree.get_children()))
-        else:
-            self.good_button["text"] = "Good: {}".format("?")
-            self.bad_button["text"] = "Bad: {}".format("?")
-            self.non_tried_button["text"] = "Non-tried: {}".format("?")
-            self.total_button["text"] = "Total: {}".format("?")
+        good, bad, non_tried, total = (len(self.good), len(self.bad), len(self.non_tried),
+                                       len(self.wtree.get_children())) if self.lwp_filename else ("?", "?", "?", "?")
+        self.good_button["text"] = "Good: {}".format(good)
+        self.bad_button["text"] = "Bad: {}".format(bad)
+        self.non_tried_button["text"] = "Non-tried: {}".format(non_tried)
+        self.total_button["text"] = "Total: {}".format(total)
 
     def validate_wpg(self, P):
-        # TODO: make normal number ranges.
+        # TODO: normal number ranges.
         valid = False
         if self.learning_plan:
             to = 1000 if len(self.learning_plan) > 999 else len(self.learning_plan) + 1
@@ -320,39 +358,46 @@ class HomeFrame(Frame):
         Trainer(self.learning_plan, self.lwp_filename)
 
     def start(self):
-        if self.good or self.bad or self.non_tried:
-            self.master.config(menu=Menu())
-            self.grid_remove()
-            StartFrame(self.good, self.bad, self.non_tried).grid()
+        if self.lwp_filename:  # if any learning plan is opened,
+            self.master.config(menu=Menu())  # hide the menu,
+            self.grid_remove()  # and hide this frame
+            GymFrame(self.good, self.bad, self.non_tried).grid()  # and create the gym frame
         else:
-            showerror("Error", "Before you start, open your learning plan file.\nTo create a new learning plan, create it using Editor")
+            # if no learning plan was opened, show an error
+            showerror("Error",
+                      "Before you start, open your learning plan file."
+                      "\nTo create a new learning plan, create it using Editor")
 
-class StartFrame(Frame):
+
+class GymFrame(Frame):
     def __init__(self, good, bad, non_tried, *args, **kwargs):
-        super().__init__()
-        self.master.title("Gym - LearnWords 1.0")
-        self.score = 0
+        super().__init__(*args, **kwargs)
+        self.master.title("Gym - LearnWords 1.0")  # set the master window title "Gym..."
+        self.score = 0  # at first the score is 0
+        # generate the words' queue (shuffle all the lists, and then generate a "smart" queue)
         random.shuffle(good)
         random.shuffle(bad)
         random.shuffle(non_tried)
         self.queue = non_tried + 2 * bad + good
-        self.word = None
-        self.word_label = Label(self)
-        self.word_label.grid(row=0, column=0, columnspan=5, sticky="ew")
-        self.time_pb = Progressbar(self)
-        self.time_pb.grid(row=1, column=0, columnspan=5, sticky="nsew")
-        Button(self, text="⏎", command=self.back).grid(row=2, column=0, sticky="ew")
-        Label(self, text="Translation: ").grid(row=2, column=1, sticky="ew")
-        self.translation_entry = Entry(self)
-        self.translation_entry.grid(row=2, column=2, sticky="ew")
-        self.translation_entry.focus()
-        self.translation_entry.bind("<Return>", self.ok)
-        self.translation_entry.bind("<Escape>", self.skip)
-        self.ok_button = Button(self, text="OK", command=self.ok)
-        self.ok_button.grid(row=2, column=3, sticky="ew")
-        self.skip_button = Button(self, text="Skip", command=self.skip)
-        self.skip_button.grid(row=2, column=4, sticky="ew")
-        self.pass_a_word()
+        self.word = None  # current word is None (at first)
+        self.word_label = Label(self)  # create a label for the word,
+        self.word_label.grid(row=0, column=0, columnspan=5, sticky="ew")  # and grid it
+        self.time_pb = Progressbar(self)  # create the time progressbar,
+        self.time_pb.grid(row=1, column=0, columnspan=5, sticky="nsew")  # and grid it
+        Button(self, text="⏎", command=self.back).grid(row=2, column=0,
+                                                       sticky="ew")  # create and grid the "Back" button
+        Label(self, text="Translation: ").grid(row=2, column=1,
+                                               sticky="ew")  # create and grid the "Translation: " label
+        self.translation_entry = Entry(self)  # create the translation entry (where the user enters the translation),
+        self.translation_entry.grid(row=2, column=2, sticky="ew")  # and grid it
+        self.translation_entry.focus()  # focus on this entry
+        self.translation_entry.bind("<Return>", self.ok)  # on "Return" press the word will be accepted (if it is right)
+        self.translation_entry.bind("<Escape>", self.skip)  # if the user press "Esc", the word will be skipped
+        self.ok_button = Button(self, text="OK", command=self.ok)  # create the "OK" button
+        self.ok_button.grid(row=2, column=3, sticky="ew")  # grid the "OK" button
+        self.skip_button = Button(self, text="Skip", command=self.skip)  # create the "Skip" button
+        self.skip_button.grid(row=2, column=4, sticky="ew")  # grid the the "Skip" button
+        self.pass_a_word()  # get the first word
 
     def pass_a_word(self):
         if self.queue:
@@ -374,16 +419,19 @@ class StartFrame(Frame):
         self.destroy()
 
     def ok(self, event=None):
-        if self.translation_entry.get().replace("ё", "е").replace("Ё", "Е") == self.word[1].replace("ё", "е").replace("Ё", "Е"):
+        if self.translation_entry.get().replace("ё", "е").replace("Ё", "Е") == self.word[1].replace("ё", "е").replace(
+                "Ё", "Е"):
+            winsound.PlaySound("sound/shot.wav", winsound.SND_ASYNC)
             self.translation_entry.delete(0, END)
             self.score += 1
             self.time_pb.stop()
             self.after_cancel(self.tg_after)
             self.pass_a_word()
         else:
-            pass
+            winsound.PlaySound("sound/wrong.wav", winsound.SND_ASYNC)
 
     def _skip(self, action):
+        winsound.PlaySound("sound/skip.wav", winsound.SND_ASYNC)
         self.time_pb.stop()
         self.word_label["text"] = "Oops! {} \"{}\" <=> \"{}\"".format(action, *self.word)
         self.translation_entry["state"] = "disabled"
@@ -399,6 +447,7 @@ class StartFrame(Frame):
 
     def timeout(self):
         self._skip("Timeout!")
+
 
 if __name__ == "__main__":
     Trainer().mainloop()
