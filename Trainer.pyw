@@ -5,7 +5,6 @@ from tkinter import *
 from tkinter.messagebox import showinfo, showerror, _show as show_msg
 from tkinter.filedialog import *
 from tkinter.ttk import Treeview, Entry, Progressbar
-
 try:
     # if Python >= 3.7:
     from tkinter.ttk import Spinbox
@@ -17,19 +16,18 @@ import random
 import pickle
 import os
 
+from ConfigureTrainer import ConfigureTrainer
 from utils import yesno2bool, validate_users_dict, validate_lwp_data, reverse_pairs, help_, about, contact_me
 
 
-# TODO: fix lots of skips on a long "Esc" key press
 # TODO: fix back function
 # TODO: add timer and score viewer in the right down corner of the window
 # TODO: add updating of stats after every game
-# TODO: add reverse ("word-translation" pair to "translation-word" pair)
 # TODO: add opening from Editor and from a .lwp file
 # TODO: add config dialog
-# TODO: fix word per game (if words < 12, set wpg to amout of words)
-# TODO: clear the translation entry in the Gym every new word
-# TODO: to make the app more cross-platform (i.e. replace winsound for a cross-platform module)
+# TODO: shuffle the translations' list (non-tried, good, bad separately)
+# TODO: to make the app more cross-platform (i.e. replace winsound with a cross-platform module)
+# TODO: to make the entered password character turn into the black circles only after a second
 
 class Trainer(Tk):
     def __init__(self, learning_plan=None, lwp_filename=None, *args, **kwargs):
@@ -59,7 +57,7 @@ class UserLoginFrame(Frame):
         self.userslistbox.config(yscrollcommand=self.scrollbar.set)  # configure the users' list
         pwd_frame = Frame(self)  # create frame for the password input
         Label(pwd_frame, text="Password:").grid(row=0, column=0, sticky="ew")  # a label, which says "Password:"
-        self.pwd_entry = Entry(pwd_frame, show="*")  # entry for the password
+        self.pwd_entry = Entry(pwd_frame, show="●")  # entry for the password
         self.pwd_entry.grid(row=0, column=1, sticky="ew")  # grid the password entry
         self.pwd_entry.bind("<Return>", self.login_as_this_user)
         pwd_frame.grid(columnspan=5)  # grid password frame
@@ -179,7 +177,7 @@ class AddUser(Toplevel):
         self.username_entry.grid(row=0, column=1)  # grid this entry,
         self.username_entry.focus()  # and focus on it
         Label(self, text="Password:").grid(row=1, column=0)  # create label with text "Password:"
-        self.pwd_entry = Entry(self, show="*")  # create entry for the password,
+        self.pwd_entry = Entry(self, show="●")  # create entry for the password,
         self.pwd_entry.grid(row=1, column=1)  # grid this entry
         # when the username is entered and the user press "Enter" ("Return") key, Tkinter focus on the password entry
         self.username_entry.bind("<Return>", lambda _event: self.pwd_entry.focus())
@@ -323,7 +321,7 @@ class HomeFrame(Frame):
                         self.wpg_spb.configure(to=lwp_len)
 
     def configure_trainer(self):
-        print("Configure")
+        ConfigureTrainer()
 
     def ctrl_hotkeys_handler(self, event):
         if event.keysym_num in self.CTRL_HOTKEYS_DICT:
@@ -390,7 +388,7 @@ class HomeFrame(Frame):
         if self.lwp_filename:  # if any learning plan is opened,
             self.master.config(menu=Menu())  # hide the menu,
             self.grid_remove()  # and hide this frame
-            GymFrame(self.good, self.bad, self.non_tried).grid()  # and create the gym frame
+            GymFrame(self.good, self.bad, self.non_tried, self.wpg_var.get()).grid()  # and create the gym frame
         else:
             # if no learning plan was opened, show an error
             showerror("Error",
@@ -399,7 +397,7 @@ class HomeFrame(Frame):
 
 
 class GymFrame(Frame):
-    def __init__(self, good, bad, non_tried, *args, **kwargs):
+    def __init__(self, good, bad, non_tried, wpg, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.master.title("Gym - LearnWords 1.0")  # set the master window title "Gym..."
         self.tg_after = None
@@ -408,7 +406,7 @@ class GymFrame(Frame):
         random.shuffle(good)
         random.shuffle(bad)
         random.shuffle(non_tried)
-        self.queue = non_tried + 2 * bad + good
+        self.queue = (non_tried + 2 * bad + good)[:wpg]
         self.queue += reverse_pairs(self.queue)
         self.word = None  # current word is None (at first)
         self.word_label = Label(self)  # create a label for the word,
@@ -422,8 +420,6 @@ class GymFrame(Frame):
         self.translation_entry = Entry(self)  # create the translation entry (where the user enters the translation),
         self.translation_entry.grid(row=2, column=2, sticky="ew")  # and grid it
         self.translation_entry.focus()  # focus on this entry
-        self.translation_entry.bind("<Return>", self.ok)  # on "Return" press the word will be accepted (if it is right)
-        self.translation_entry.bind("<Escape>", self.skip)  # if the user press "Esc", the word will be skipped
         self.ok_button = Button(self, text="OK", command=self.ok)  # create the "OK" button
         self.ok_button.grid(row=2, column=3, sticky="ew")  # grid the "OK" button
         self.skip_button = Button(self, text="Skip", command=self.skip)  # create the "Skip" button
@@ -435,11 +431,14 @@ class GymFrame(Frame):
             self.ok_button["state"] = "normal"
             self.skip_button["state"] = "normal"
             self.translation_entry["state"] = "normal"
+            self.translation_entry.delete(0, END)
             self.word = self.queue.pop(0)
             self.word_label["text"] = self.word[0]
             self.time_pb.start(100)
             self.tg_after = self.after(9900, self.timeout)
+            self.enable_controls()
         else:
+            self.disable_controls()
             winsound.PlaySound("sound/applause.wav", winsound.SND_ASYNC)
             self.word_label["text"] = "Hooray! You've shot all the words!"
             self.translation_entry["state"] = "disabled"
@@ -454,7 +453,6 @@ class GymFrame(Frame):
         if self.translation_entry.get().replace("ё", "е").replace("Ё", "Е") == self.word[1].replace("ё", "е").replace(
                 "Ё", "Е"):
             winsound.PlaySound("sound/shot.wav", winsound.SND_ASYNC)
-            self.translation_entry.delete(0, END)
             self.score += 1
             self.time_pb.stop()
             self.after_cancel(self.tg_after)
@@ -463,6 +461,7 @@ class GymFrame(Frame):
             winsound.PlaySound("sound/wrong.wav", winsound.SND_ASYNC)
 
     def _skip(self, action):
+        self.disable_controls()
         winsound.PlaySound("sound/skip.wav", winsound.SND_ASYNC)
         self.time_pb.stop()
         self.word_label["text"] = "Oops! {} \"{}\" <=> \"{}\"".format(action, *self.word)
@@ -472,7 +471,6 @@ class GymFrame(Frame):
         for i in range(2):
             self.queue.append(self.word)
         self.after(3000, self.pass_a_word)
-        self.translation_entry.delete(0, END)
 
     def skip(self, _event=None):
         self.after_cancel(self.tg_after)
@@ -480,6 +478,14 @@ class GymFrame(Frame):
 
     def timeout(self):
         self._skip("Timeout!")
+
+    def enable_controls(self):
+        self.translation_entry.bind("<Return>", self.ok)  # on "Return" press the word will be accepted (if it is right)
+        self.translation_entry.bind("<Escape>", self.skip)  # if the user press "Esc", the word will be skipped
+
+    def disable_controls(self):
+        self.translation_entry.unbind("<Return>")
+        self.translation_entry.unbind("<Escape>")
 
 
 if __name__ == "__main__":
