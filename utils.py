@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+from tkinter.messagebox import showinfo
 import webbrowser
 
 
@@ -6,7 +7,16 @@ def yesno2bool(result):
     return True if result == "yes" else False
 
 
-def contact_me():
+def help_(_event=None):
+    pass
+
+
+def about(_event=None):
+    showinfo("About LearnWords",
+             "LearnWords 1.0 (C) Demian Wolf, 2019\nLearnWords is an easy way to learn words of foreign language - convenient learning plan editor and smart autotrainer.\nProgram licensed AS-IS\nThank you for using my program!")
+
+
+def contact_me(_event=None):
     webbrowser.open("mailto:demianwolfssd@gmail.com")
 
 
@@ -32,3 +42,7 @@ def validate_users_dict(data):
                     assert len(pair) == 2
                     for elem in pair:
                         assert isinstance(elem, str)
+
+
+def reverse_pairs(data):
+    return [tuple(reversed(pair)) for pair in data]

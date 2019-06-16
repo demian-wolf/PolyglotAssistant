@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# Sound was taken from Scratch 1.4 and https://noisefx.ru/
+# This application uses sound from Scratch 1.4 and https://noisefx.ru/
 from tkinter import *
 from tkinter.messagebox import showinfo, showerror, _show as show_msg
 from tkinter.filedialog import *
@@ -17,7 +17,7 @@ import random
 import pickle
 import os
 
-from utils import yesno2bool, validate_users_dict, validate_lwp_data
+from utils import yesno2bool, validate_users_dict, validate_lwp_data, reverse_pairs, help_, about, contact_me
 
 
 # TODO: fix lots of skips on a long "Esc" key press
@@ -27,8 +27,9 @@ from utils import yesno2bool, validate_users_dict, validate_lwp_data
 # TODO: add reverse ("word-translation" pair to "translation-word" pair)
 # TODO: add opening from Editor and from a .lwp file
 # TODO: add config dialog
-# TODO: add hotkeys support
 # TODO: fix word per game (if words < 12, set wpg to amout of words)
+# TODO: clear the translation entry in the Gym every new word
+# TODO: to make the app more cross-platform (i.e. replace winsound for a cross-platform module)
 
 class Trainer(Tk):
     def __init__(self, learning_plan=None, lwp_filename=None, *args, **kwargs):
@@ -75,7 +76,7 @@ class UserLoginFrame(Frame):
         if event.y <= 17 * self.userslistbox.size():  # if the mouse y on the users' list belongs to any username
             self.login_as_this_user()  # login as the selected usere
 
-    def login_as_this_user(self, event=None):
+    def login_as_this_user(self, _event=None):
         selection = self.userslistbox.curselection()  # get user's selection
         if selection:  # if any user is selected,
             selected_user = self.userslistbox.get(selection[0])  # get the first (the single one) element from selection
@@ -181,14 +182,14 @@ class AddUser(Toplevel):
         self.pwd_entry = Entry(self, show="*")  # create entry for the password,
         self.pwd_entry.grid(row=1, column=1)  # grid this entry
         # when the username is entered and the user press "Enter" ("Return") key, Tkinter focus on the password entry
-        self.username_entry.bind("<Return>", lambda event=None: self.pwd_entry.focus())
+        self.username_entry.bind("<Return>", lambda _event: self.pwd_entry.focus())
         # when both the username and the password are entered, app will submit the user's data on "Enter"
         self.pwd_entry.bind("<Return>", self.ok)
         Button(self, text="OK", command=self.ok).grid(row=2, column=0, sticky="ew")  # create "OK" button
         Button(self, text="Cancel", command=self.destroy).grid(row=2, column=1, sticky="ew")  # create "Cancel" button
         self.wait_window()  # doesn't returns anything while the window is not destroyed
 
-    def ok(self, event=None):
+    def ok(self, _event=None):
         if not self.username_entry.get():  # if the user skipped username entry, give him a warning
             if not yesno2bool(show_msg("Warning",
                                        "It's highly unrecommended to create users with empty usernames. "
@@ -210,7 +211,11 @@ class AddUser(Toplevel):
 class HomeFrame(Frame):
     def __init__(self, users_dict, user, lwp_filename, learning_plan, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.master.title("Home ({}) - LearnWords 1.0".format(user))  # set master window's title
+
+        self.CTRL_HOTKEYS_DICT = {111: self.open_lwp, 1097: self.open_lwp}
+        self.CTRL_ALT_SHIFT_HOTKEYS_DICT = {67: self.configure_trainer, 1057: self.configure_trainer}
+
+        self.master.title("{} - Home ({}) - LearnWords 1.0".format("Untitled", user))  # set master window's title
         # create lists for good, bad, and non-tried words
         self.good = []
         self.bad = []
@@ -226,16 +231,17 @@ class HomeFrame(Frame):
         self.filemenu = Menu(self.menubar, tearoff=False)
         self.filemenu.add_command(label="Open", command=self.open_lwp, accelerator="Ctrl+O")
         self.filemenu.add_separator()
-        self.filemenu.add_command(label="Exit", accelerator="Alt+F4")
+        self.filemenu.add_command(label="Exit", command=lambda: self.destroy(), accelerator="Alt+F4")
         self.menubar.add_cascade(label="File", menu=self.filemenu)
         self.toolsmenu = Menu(self.menubar, tearoff=False)
-        self.toolsmenu.add_command(label="Configuration", accelerator="Ctrl+Alt+Shift+C")
+        self.toolsmenu.add_command(label="Configure Trainer", command=self.configure_trainer,
+                                   accelerator="Ctrl+Alt+Shift+C")
         self.menubar.add_cascade(label="Tools", menu=self.toolsmenu)
         self.helpmenu = Menu(self.menubar, tearoff=False)
-        self.helpmenu.add_command(label="LearnWords Help")
+        self.helpmenu.add_command(label="LearnWords Help", accelerator="F1")
         self.helpmenu.add_separator()
-        self.helpmenu.add_command(label="About LearnWords")
-        self.helpmenu.add_command(label="Contact me")
+        self.helpmenu.add_command(label="About LearnWords", accelerator="Ctrl+F1")
+        self.helpmenu.add_command(label="Contact me", accelerator="Ctrl+Shift+F1")
         self.menubar.add_cascade(label="Help", menu=self.helpmenu)
         self.master.config(menu=self.menubar)  # set master window's menu = self.menubar
 
@@ -262,11 +268,18 @@ class HomeFrame(Frame):
         self.wpg_var = IntVar(self)  # create variable for quantity of words
         self.wpg_var.set(12)  # set it 12 by default
         self.wpg_spb = Spinbox(self, width=3, from_=1, to_=999, textvariable=self.wpg_var,
-                validate="all", validatecommand=(self.master.register(self.validate_wpg), '%P'))
+                               validate="all", validatecommand=(self.master.register(self.validate_wpg), '%P'))
         self.wpg_spb.grid(row=1, column=6, sticky="ew")  # create the words per game spinbox
         self.wpg_spb.bind("<Return>", self.start)
         Button(self, text="Start", command=self.start) \
             .grid(row=1, column=7, columnspan=2, sticky="ew")  # create the start button
+
+        self.master.bind("<F1>", help_)
+        self.master.bind("<Control-F1>", about)
+        self.master.bind("<Control-Shift-F1>", contact_me)
+        self.master.bind("<Control-Key>", self.ctrl_hotkeys_handler)
+        self.master.bind("<Control-Alt-Shift-Key>", self.ctrl_alt_shift_hotkeys_handler)
+
         self.update_stats()  # get stats for this user
         self.get_words_list()  # get words' list
 
@@ -274,6 +287,9 @@ class HomeFrame(Frame):
         try:
             # try to open this file
             file = askopenfile(mode="rb", filetypes=[("Learn Words Plan", ".lwp")])
+            assert file
+        except AssertionError:
+            pass
         except:
             # if couldn't, show an error message
             showerror("Error", "Unable to open this file!")
@@ -296,6 +312,8 @@ class HomeFrame(Frame):
                     # if it is a valid learning plan,
                     self.get_words_list()  # get words list from the learning plan,
                     self.lwp_filename = file.name  # and set up the filename attribute
+                    self.master.title(
+                        "{} - Home ({}) - LearnWords 1.0".format(self.lwp_filename, self.user))  # update the title
                     lwp_len = len(self.learning_plan)
                     if len(self.learning_plan) > 12:
                         self.wpg_var.set(12)
@@ -303,6 +321,18 @@ class HomeFrame(Frame):
                     else:
                         self.wpg_var.set(lwp_len)
                         self.wpg_spb.configure(to=lwp_len)
+
+    def configure_trainer(self):
+        print("Configure")
+
+    def ctrl_hotkeys_handler(self, event):
+        if event.keysym_num in self.CTRL_HOTKEYS_DICT:
+            self.CTRL_HOTKEYS_DICT[event.keysym_num]()
+
+    def ctrl_alt_shift_hotkeys_handler(self, event):
+        if event.keysym_num in self.CTRL_ALT_SHIFT_HOTKEYS_DICT:
+            self.CTRL_ALT_SHIFT_HOTKEYS_DICT[event.keysym_num]()
+
     def get_words_list(self):
         # clear all the words' lists (good, bad and non_tried),
         self.good.clear()
@@ -356,7 +386,7 @@ class HomeFrame(Frame):
         self.master.destroy()
         Trainer(self.learning_plan, self.lwp_filename)
 
-    def start(self, event=None):
+    def start(self, _event=None):
         if self.lwp_filename:  # if any learning plan is opened,
             self.master.config(menu=Menu())  # hide the menu,
             self.grid_remove()  # and hide this frame
@@ -372,12 +402,14 @@ class GymFrame(Frame):
     def __init__(self, good, bad, non_tried, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.master.title("Gym - LearnWords 1.0")  # set the master window title "Gym..."
+        self.tg_after = None
         self.score = 0  # at first the score is 0
-        # generate the words' queue (shuffle all the lists, and then generate a "smart" queue)
+        # generate the words' pairs list (shuffle all the lists, and then generate a "smart" queue)
         random.shuffle(good)
         random.shuffle(bad)
         random.shuffle(non_tried)
         self.queue = non_tried + 2 * bad + good
+        self.queue += reverse_pairs(self.queue)
         self.word = None  # current word is None (at first)
         self.word_label = Label(self)  # create a label for the word,
         self.word_label.grid(row=0, column=0, columnspan=5, sticky="ew")  # and grid it
@@ -408,6 +440,7 @@ class GymFrame(Frame):
             self.time_pb.start(100)
             self.tg_after = self.after(9900, self.timeout)
         else:
+            winsound.PlaySound("sound/applause.wav", winsound.SND_ASYNC)
             self.word_label["text"] = "Hooray! You've shot all the words!"
             self.translation_entry["state"] = "disabled"
             self.ok_button["state"] = "disabled"
@@ -417,7 +450,7 @@ class GymFrame(Frame):
     def back(self):
         self.destroy()
 
-    def ok(self, event=None):
+    def ok(self, _event=None):
         if self.translation_entry.get().replace("ё", "е").replace("Ё", "Е") == self.word[1].replace("ё", "е").replace(
                 "Ё", "Е"):
             winsound.PlaySound("sound/shot.wav", winsound.SND_ASYNC)
@@ -439,8 +472,9 @@ class GymFrame(Frame):
         for i in range(2):
             self.queue.append(self.word)
         self.after(3000, self.pass_a_word)
+        self.translation_entry.delete(0, END)
 
-    def skip(self, event=None):
+    def skip(self, _event=None):
         self.after_cancel(self.tg_after)
         self._skip("Skip?")
 
