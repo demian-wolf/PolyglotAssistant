@@ -3,7 +3,7 @@
 # This application uses sound from Scratch 1.4 and https://noisefx.ru/
 from tkinter import *
 from tkinter.messagebox import showinfo, showerror, _show as show_msg
-from tkinter.filedialog import *
+from tkinter.filedialog import askopenfile
 from tkinter.ttk import Treeview, Entry, Progressbar
 try:
     # if Python >= 3.7:
@@ -28,6 +28,7 @@ from utils import yesno2bool, validate_users_dict, validate_lwp_data, reverse_pa
 # TODO: shuffle the translations' list (non-tried, good, bad separately)
 # TODO: to make the app more cross-platform (i.e. replace winsound with a cross-platform module)
 # TODO: to make the entered password character turn into the black circles only after a second
+# TODO: configure the smart timer
 
 class Trainer(Tk):
     def __init__(self, learning_plan=None, lwp_filename=None, *args, **kwargs):
@@ -210,8 +211,9 @@ class HomeFrame(Frame):
     def __init__(self, users_dict, user, lwp_filename, learning_plan, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.CTRL_HOTKEYS_DICT = {111: self.open_lwp, 1097: self.open_lwp}
-        self.CTRL_ALT_SHIFT_HOTKEYS_DICT = {67: self.configure_trainer, 1057: self.configure_trainer}
+        self.CTRL_HOTKEYS_DICT = {111: self.open_lwp, 1097: self.open_lwp, 79: self.open_lwp, 1065: self.open_lwp}
+        self.CTRL_SHIFT_HOTKEYS_DICT = {67: self.configure_trainer, 1057: self.configure_trainer,
+                                        99: self.configure_trainer, 1089: self.configure_trainer}
 
         self.master.title("{} - Home ({}) - LearnWords 1.0".format("Untitled", user))  # set master window's title
         # create lists for good, bad, and non-tried words
@@ -233,7 +235,7 @@ class HomeFrame(Frame):
         self.menubar.add_cascade(label="File", menu=self.filemenu)
         self.toolsmenu = Menu(self.menubar, tearoff=False)
         self.toolsmenu.add_command(label="Configure Trainer", command=self.configure_trainer,
-                                   accelerator="Ctrl+Alt+Shift+C")
+                                   accelerator="Ctrl+Shift+C")
         self.menubar.add_cascade(label="Tools", menu=self.toolsmenu)
         self.helpmenu = Menu(self.menubar, tearoff=False)
         self.helpmenu.add_command(label="LearnWords Help", accelerator="F1")
@@ -276,7 +278,7 @@ class HomeFrame(Frame):
         self.master.bind("<Control-F1>", about)
         self.master.bind("<Control-Shift-F1>", contact_me)
         self.master.bind("<Control-Key>", self.ctrl_hotkeys_handler)
-        self.master.bind("<Control-Alt-Shift-Key>", self.ctrl_alt_shift_hotkeys_handler)
+        self.master.bind("<Control-Shift-Key>", self.ctrl_shift_hotkeys_handler)
 
         self.update_stats()  # get stats for this user
         self.get_words_list()  # get words' list
@@ -327,9 +329,9 @@ class HomeFrame(Frame):
         if event.keysym_num in self.CTRL_HOTKEYS_DICT:
             self.CTRL_HOTKEYS_DICT[event.keysym_num]()
 
-    def ctrl_alt_shift_hotkeys_handler(self, event):
-        if event.keysym_num in self.CTRL_ALT_SHIFT_HOTKEYS_DICT:
-            self.CTRL_ALT_SHIFT_HOTKEYS_DICT[event.keysym_num]()
+    def ctrl_shift_hotkeys_handler(self, event):
+        if event.keysym_num in self.CTRL_SHIFT_HOTKEYS_DICT:
+            self.CTRL_SHIFT_HOTKEYS_DICT[event.keysym_num]()
 
     def get_words_list(self):
         # clear all the words' lists (good, bad and non_tried),
@@ -434,6 +436,8 @@ class GymFrame(Frame):
             self.translation_entry.delete(0, END)
             self.word = self.queue.pop(0)
             self.word_label["text"] = self.word[0]
+            # self.time_pb.start(400 * len(self.word[1]) // 100)
+            # self.tg_after = self.after(400 * len(self.word[1]) - 100, self.timeout)
             self.time_pb.start(100)
             self.tg_after = self.after(9900, self.timeout)
             self.enable_controls()
@@ -450,8 +454,7 @@ class GymFrame(Frame):
         self.destroy()
 
     def ok(self, _event=None):
-        if self.translation_entry.get().replace("ё", "е").replace("Ё", "Е") == self.word[1].replace("ё", "е").replace(
-                "Ё", "Е"):
+        if self.is_right_answer():
             winsound.PlaySound("sound/shot.wav", winsound.SND_ASYNC)
             self.score += 1
             self.time_pb.stop()
@@ -461,16 +464,19 @@ class GymFrame(Frame):
             winsound.PlaySound("sound/wrong.wav", winsound.SND_ASYNC)
 
     def _skip(self, action):
-        self.disable_controls()
-        winsound.PlaySound("sound/skip.wav", winsound.SND_ASYNC)
-        self.time_pb.stop()
-        self.word_label["text"] = "Oops! {} \"{}\" <=> \"{}\"".format(action, *self.word)
-        self.translation_entry["state"] = "disabled"
-        self.ok_button["state"] = "disabled"
-        self.skip_button["state"] = "disabled"
-        for i in range(2):
-            self.queue.append(self.word)
-        self.after(3000, self.pass_a_word)
+        if self.is_right_answer() and action == "Timeout!":
+            self.ok()
+        else:
+            self.disable_controls()
+            winsound.PlaySound("sound/skip.wav", winsound.SND_ASYNC)
+            self.time_pb.stop()
+            self.word_label["text"] = "Oops! {} \"{}\" <=> \"{}\"".format(action, *self.word)
+            self.translation_entry["state"] = "disabled"
+            self.ok_button["state"] = "disabled"
+            self.skip_button["state"] = "disabled"
+            for i in range(2):
+                self.queue.append(self.word)
+            self.after(3000, self.pass_a_word)
 
     def skip(self, _event=None):
         self.after_cancel(self.tg_after)
@@ -486,6 +492,10 @@ class GymFrame(Frame):
     def disable_controls(self):
         self.translation_entry.unbind("<Return>")
         self.translation_entry.unbind("<Escape>")
+
+    def is_right_answer(self):
+        return True if self.translation_entry.get().replace("ё", "е").replace("Ё", "Е") == self.word[1].\
+            replace("ё", "е").replace("Ё", "Е") else False
 
 
 if __name__ == "__main__":

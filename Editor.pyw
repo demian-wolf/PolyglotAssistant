@@ -10,6 +10,7 @@ from utils import yesno2bool, help_, about, contact_me, validate_lwp_data
 
 UNTITLED = "Untitled"
 
+# TODO: Add hotkeys support, when CAPS LOCK is on
 
 class Editor(Tk):
     def __init__(self):

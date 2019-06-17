@@ -1,4 +1,5 @@
 from tkinter import *
+from tkinter.ttk import LabelFrame
 
 
 class ConfigureTrainer(Toplevel):
