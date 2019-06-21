@@ -8,23 +8,24 @@ import pickle
 from Trainer import Trainer
 from utils import yesno2bool, help_, about, contact_me, validate_lwp_data
 
-UNTITLED = "Untitled"
-
-# TODO: Add hotkeys support, when CAPS LOCK is on
+UNTITLED = "Untitled"  # Define the "Untitled" filename as a constant
 
 class Editor(Tk):
     def __init__(self):
         super().__init__()
         self.CTRL_HOTKEYS_DICT = {115: self.save, 1099: self.save, 1110: self.save,
-                                  110: self.new, 1090: self.new,
-                                  111: self.open_, 1097: self.open_}
-        self.CTRL_SHIFT_HOTKEYS_DICT = {83: self.save, 1030: self.save, 1067: self.save}
-        self.CTRL_ALT_HOTKEYS_DICT = {97: self.add, 1092: self.add,
-                                      101: self.edit, 1091: self.edit,
-                                      114: self.remove, 1082: self.remove,
-                                      99: self.clear, 1089: self.clear,
-                                      116: self.train_now, 1077: self.train_now}
-        self.resizable(False, False)
+                                  83: self.save, 1067: self.save, 1030: self.save,
+                                  110: self.new, 1090: self.new, 78: self.new, 1058: self.new,
+                                  111: self.open_, 1097: self.open_, 79: self.open_, 1065: self.open_}
+        self.CTRL_SHIFT_HOTKEYS_DICT = {83: self.save_as, 1067: self.save_as, 1030: self.save_as,
+                                        115: self.save_as, 1099: self.save_as, 1110: self.save_as}
+        self.CTRL_ALT_HOTKEYS_DICT = {97: self.add, 1092: self.add, 65: self.add, 1060: self.add,
+                                      101: self.edit, 1091: self.edit, 69: self.edit, 1059: self.edit,
+                                      114: self.remove, 1082: self.remove, 82: self.remove, 1050: self.remove,
+                                      99: self.clear, 1089: self.clear, 67: self.clear, 1057: self.clear,
+                                      116: self.train_now, 1077: self.train_now, 84: self.train_now,
+                                      1045: self.train_now}
+        self.resizable(False, False)  # set this window unresizable
         self.protocol("WM_DELETE_WINDOW", self.exit_)
         self.saved = None
         self.unsaved_prefix = None
@@ -82,6 +83,7 @@ class Editor(Tk):
             self.CTRL_HOTKEYS_DICT[event.keysym_num]()
 
     def ctrl_alt_hotkeys_handler(self, event):
+        print(event.keysym_num)
         if event.keysym_num in self.CTRL_ALT_HOTKEYS_DICT:
             self.CTRL_ALT_HOTKEYS_DICT[event.keysym_num]()
 
@@ -134,12 +136,11 @@ class Editor(Tk):
                             self.set_saved(True)
                             self.filename = lwp_file.name
                             self.update_title()
-
     def save(self):
         if self.filename != UNTITLED:
             try:
                 outfile = open(self.filename, "wb")
-                pickle.dump([list(map(str, self.wtree.item(child)["values"])) for child in self.wtree.get_children()],
+                pickle.dump([tuple(map(str, self.wtree.item(child)["values"])) for child in self.wtree.get_children()],
                             outfile)
                 outfile.close()
                 self.filename = outfile.name

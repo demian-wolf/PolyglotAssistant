@@ -11,7 +11,7 @@ try:
 except ImportError:
     # otherwise
     pass
-import winsound
+from playsound import playsound
 import random
 import pickle
 import os
@@ -22,11 +22,10 @@ from utils import yesno2bool, validate_users_dict, validate_lwp_data, reverse_pa
 
 # TODO: fix back function
 # TODO: add timer and score viewer in the right down corner of the window
-# TODO: add updating of stats after every game
+## TODO: add updating of stats after every game
 # TODO: add opening from Editor and from a .lwp file
 # TODO: add config dialog
 # TODO: shuffle the translations' list (non-tried, good, bad separately)
-# TODO: to make the app more cross-platform (i.e. replace winsound with a cross-platform module)
 # TODO: to make the entered password character turn into the black circles only after a second
 # TODO: configure the smart timer
 
@@ -321,6 +320,7 @@ class HomeFrame(Frame):
                     else:
                         self.wpg_var.set(lwp_len)
                         self.wpg_spb.configure(to=lwp_len)
+                    print(self.learning_plan)
 
     def configure_trainer(self):
         ConfigureTrainer()
@@ -390,7 +390,7 @@ class HomeFrame(Frame):
         if self.lwp_filename:  # if any learning plan is opened,
             self.master.config(menu=Menu())  # hide the menu,
             self.grid_remove()  # and hide this frame
-            GymFrame(self.good, self.bad, self.non_tried, self.wpg_var.get()).grid()  # and create the gym frame
+            print(GymFrame(self.good, self.bad, self.non_tried, self.wpg_var.get()).updated_stats)  # and create the gym frame
         else:
             # if no learning plan was opened, show an error
             showerror("Error",
@@ -403,14 +403,24 @@ class GymFrame(Frame):
         super().__init__(*args, **kwargs)
         self.master.title("Gym - LearnWords 1.0")  # set the master window title "Gym..."
         self.tg_after = None
+        self.updated_stats = {}
         self.score = 0  # at first the score is 0
         # generate the words' pairs list (shuffle all the lists, and then generate a "smart" queue)
         random.shuffle(good)
         random.shuffle(bad)
         random.shuffle(non_tried)
-        self.queue = (non_tried + 2 * bad + good)[:wpg]
+        self.queue = (2 * bad + non_tried + good)[:wpg]
+        self.start_queue = self.queue
+        """rp_bad = reverse_pairs(bad)
+        rp_ntr = reverse_pairs(non_tried)
+        rp_good = reverse_pairs(good)
+        random.shuffle(rp_bad)
+        random.shuffle(rp_ntr)
+        random.shuffle(rp_good)
+        reversed_pairs = rp_bad + rp_ntr + rp_good
+        self.queue += reversed_pairs[:wpg]"""
         self.queue += reverse_pairs(self.queue)
-        self.word = None  # current word is None (at first)
+        self.pair = None  # current pair is None (at first)
         self.word_label = Label(self)  # create a label for the word,
         self.word_label.grid(row=0, column=0, columnspan=5, sticky="ew")  # and grid it
         self.time_pb = Progressbar(self)  # create the time progressbar,
@@ -427,6 +437,8 @@ class GymFrame(Frame):
         self.skip_button = Button(self, text="Skip", command=self.skip)  # create the "Skip" button
         self.skip_button.grid(row=2, column=4, sticky="ew")  # grid the the "Skip" button
         self.pass_a_word()  # get the first word
+        self.grid()
+        self.wait_window()
 
     def pass_a_word(self):
         if self.queue:
@@ -434,16 +446,16 @@ class GymFrame(Frame):
             self.skip_button["state"] = "normal"
             self.translation_entry["state"] = "normal"
             self.translation_entry.delete(0, END)
-            self.word = self.queue.pop(0)
-            self.word_label["text"] = self.word[0]
-            # self.time_pb.start(400 * len(self.word[1]) // 100)
-            # self.tg_after = self.after(400 * len(self.word[1]) - 100, self.timeout)
+            self.pair = self.queue.pop(0)
+            self.word_label["text"] = self.pair[0]
+            # self.time_pb.start(400 * len(self.pair[1]) // 100)
+            # self.tg_after = self.after(400 * len(self.pair[1]) - 100, self.timeout)
             self.time_pb.start(100)
             self.tg_after = self.after(9900, self.timeout)
             self.enable_controls()
         else:
             self.disable_controls()
-            winsound.PlaySound("sound/applause.wav", winsound.SND_ASYNC)
+            playsound("sound/applause.wav", False)
             self.word_label["text"] = "Hooray! You've shot all the words!"
             self.translation_entry["state"] = "disabled"
             self.ok_button["state"] = "disabled"
@@ -455,27 +467,31 @@ class GymFrame(Frame):
 
     def ok(self, _event=None):
         if self.is_right_answer():
-            winsound.PlaySound("sound/shot.wav", winsound.SND_ASYNC)
+            playsound("sound/shot.wav", False)
+            if self.pair in self.updated_stats:
+                self.updated_stats[self.pair] += 1
+            else:
+                self.updated_stats[self.pair] = 1
             self.score += 1
             self.time_pb.stop()
             self.after_cancel(self.tg_after)
             self.pass_a_word()
         else:
-            winsound.PlaySound("sound/wrong.wav", winsound.SND_ASYNC)
+            playsound("sound/wrong.wav", False)
 
     def _skip(self, action):
         if self.is_right_answer() and action == "Timeout!":
             self.ok()
         else:
             self.disable_controls()
-            winsound.PlaySound("sound/skip.wav", winsound.SND_ASYNC)
+            playsound("sound/skip.wav", False)
             self.time_pb.stop()
-            self.word_label["text"] = "Oops! {} \"{}\" <=> \"{}\"".format(action, *self.word)
+            self.word_label["text"] = "Oops! {} \"{}\" <=> \"{}\"".format(action, *self.pair)
             self.translation_entry["state"] = "disabled"
             self.ok_button["state"] = "disabled"
             self.skip_button["state"] = "disabled"
             for i in range(2):
-                self.queue.append(self.word)
+                self.queue.append(self.pair)
             self.after(3000, self.pass_a_word)
 
     def skip(self, _event=None):
@@ -494,8 +510,9 @@ class GymFrame(Frame):
         self.translation_entry.unbind("<Escape>")
 
     def is_right_answer(self):
-        return True if self.translation_entry.get().replace("ё", "е").replace("Ё", "Е") == self.word[1].\
+        return True if self.translation_entry.get().replace("ё", "е").replace("Ё", "Е") == self.pair[1].\
             replace("ё", "е").replace("Ё", "Е") else False
+
 
 
 if __name__ == "__main__":
