@@ -4,7 +4,7 @@
 from tkinter import *
 from tkinter.messagebox import showinfo, showerror, _show as show_msg
 from tkinter.filedialog import askopenfile
-from tkinter.ttk import Treeview, Entry, Progressbar
+from tkinter.ttk import Treeview, Entry, Progressbar, Scrollbar
 try:
     # if Python >= 3.7:
     from tkinter.ttk import Spinbox
@@ -66,6 +66,7 @@ class UserLoginFrame(Frame):
         Button(self, text="Add a new user", command=self.add_a_new_user).grid(row=2, column=1, sticky="ew")
         Button(self, text="Remove this user", command=self.remove_this_user).grid(row=2, column=2, sticky="ew")
         Button(self, text="Cancel", command=self.master.destroy).grid(row=2, column=3, columnspan=2, sticky="ew")
+        # self.master.bind("<Escape>", lambda _event: self.master.destroy())
         self.update_ulist()  # update user list (it is empty)
         self.grid()  # grid this frame in the master window
         self.wait_variable(self.user)  # wait (don't return anything) while the user won't log in

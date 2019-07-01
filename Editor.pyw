@@ -2,11 +2,12 @@
 from tkinter import *
 from tkinter.messagebox import showinfo, showerror, _show as show_msg
 from tkinter.filedialog import *
-from tkinter.ttk import Treeview, Entry
+from tkinter.ttk import Treeview, Entry, Scrollbar
 import pickle
 
 from Trainer import Trainer
 from utils import yesno2bool, help_, about, contact_me, validate_lwp_data
+
 
 UNTITLED = "Untitled"  # Define the "Untitled" filename as a constant
 
@@ -83,7 +84,6 @@ class Editor(Tk):
             self.CTRL_HOTKEYS_DICT[event.keysym_num]()
 
     def ctrl_alt_hotkeys_handler(self, event):
-        print(event.keysym_num)
         if event.keysym_num in self.CTRL_ALT_HOTKEYS_DICT:
             self.CTRL_ALT_HOTKEYS_DICT[event.keysym_num]()
 
@@ -159,7 +159,7 @@ class Editor(Tk):
             if outfile:
                 try:
                     pickle.dump(
-                        [list(map(str, self.wtree.item(child)["values"])) for child in self.wtree.get_children()],
+                        [tuple(map(str, self.wtree.item(child)["values"])) for child in self.wtree.get_children()],
                         outfile)
                 except:
                     showerror("Error", "Sorry, an unexpected error occurred!")
@@ -176,6 +176,7 @@ class Editor(Tk):
         to_add = Edit("Add")
         if to_add.data:
             self.wtree.insert("", END, values=to_add.data)
+            self.wtree.update()
             self.set_saved(False)
             self.wtree.selection_set(self.wtree.get_children()[-1])
             self.wtree.yview_moveto(1)
