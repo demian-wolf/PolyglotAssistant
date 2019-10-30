@@ -29,12 +29,13 @@ def validate_lwp_data(data):
 
 
 def validate_users_dict(data):
+    print(data)
     assert isinstance(data, dict)
     for user in data:
         assert sorted(data[user]) == ["password", "stats"]
         assert isinstance(data[user]["stats"], dict)
         for file in data[user]["stats"]:
-            assert sorted(data[user]["stats"][file].keys()) == ["bad", "good", "unknown"]
+            assert sorted(data[user]["stats"][file].keys()) == ["bad", "good"]
             for type_ in data[user]["stats"][file]:
                 for pair in data[user]["stats"][file][type_]:
                     assert isinstance(pair, tuple)
@@ -45,6 +46,15 @@ def validate_users_dict(data):
 
 def reverse_pairs(data):
     return [tuple(reversed(pair)) for pair in data]
+
+def filter_stats(result, learning_plan):
+    new_result = set()
+    for elem in result:
+        if elem in learning_plan:
+            new_result.add(elem)
+        else:
+            new_result.add(tuple(reversed(elem)))
+    return new_result
 
 def count(pair, data):
     pass

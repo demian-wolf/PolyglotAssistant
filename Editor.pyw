@@ -1,11 +1,16 @@
 #!/usr/bin/python3
+
+# (C) Demian Wolf, 2019
+# email: demianwolfssd@gmail.com
+
 from tkinter import *
 from tkinter.messagebox import showinfo, showerror, _show as show_msg
 from tkinter.filedialog import *
 from tkinter.ttk import Treeview, Entry, Scrollbar
 import pickle
+import sys
 
-from Trainer import Trainer
+# from Trainer import Trainer
 from utils import yesno2bool, help_, about, contact_me, validate_lwp_data
 
 
@@ -14,43 +19,35 @@ UNTITLED = "Untitled"  # Define the "Untitled" filename as a constant
 class Editor(Tk):
     def __init__(self):
         super().__init__()
-        self.CTRL_HOTKEYS_DICT = {115: self.save, 1099: self.save, 1110: self.save,
-                                  83: self.save, 1067: self.save, 1030: self.save,
-                                  110: self.new, 1090: self.new, 78: self.new, 1058: self.new,
-                                  111: self.open_, 1097: self.open_, 79: self.open_, 1065: self.open_}
-        self.CTRL_SHIFT_HOTKEYS_DICT = {83: self.save_as, 1067: self.save_as, 1030: self.save_as,
-                                        115: self.save_as, 1099: self.save_as, 1110: self.save_as}
-        self.CTRL_ALT_HOTKEYS_DICT = {97: self.add, 1092: self.add, 65: self.add, 1060: self.add,
-                                      101: self.edit, 1091: self.edit, 69: self.edit, 1059: self.edit,
-                                      114: self.remove, 1082: self.remove, 82: self.remove, 1050: self.remove,
-                                      99: self.clear, 1089: self.clear, 67: self.clear, 1057: self.clear,
-                                      116: self.train_now, 1077: self.train_now, 84: self.train_now,
-                                      1045: self.train_now}
-        self.resizable(False, False)  # set this window unresizable
-        self.protocol("WM_DELETE_WINDOW", self.exit_)
-        self.saved = None
-        self.unsaved_prefix = None
-        self.filename = UNTITLED
-        self.set_saved(True)
 
-        self.menubar = Menu(self, tearoff=False)
-        self.config(menu=self.menubar)
+        # TODO: make resizable
+        # self.resizable(False, False)  # set this window unresizable
+        self.protocol("WM_DELETE_WINDOW", self.exit_)  # ask yes/no/cancel before exit
+
+        # Create menu at the top of the main window
+        self.menubar = Menu(self, tearoff=False)  # create the menubar
+        self.config(menu=self.menubar)  # set the menubar widget for the main window
+
+        # Create the "File" menu
         self.filemenu = Menu(self.menubar, tearoff=False)
         self.filemenu.add_command(label="New", command=self.new, accelerator="Ctrl+N")
         self.filemenu.add_command(label="Open", command=self.open_, accelerator="Ctrl+O")
         self.filemenu.add_command(label="Save", command=self.save, accelerator="Ctrl+S")
         self.filemenu.add_command(label="Save As", command=self.save_as, accelerator="Ctrl+Shift+S")
+        self.filemenu.add_command(label="Statistics", command=self.statistics)
         self.filemenu.add_separator()
         self.filemenu.add_command(label="Exit", command=self.exit_, accelerator="Alt+F4")
         self.menubar.add_cascade(menu=self.filemenu, label="File")
+        # Create the "Edit" menu
         self.editmenu = Menu(self.menubar, tearoff=False)
         self.editmenu.add_command(label="Add", command=self.add, accelerator="Ctrl+Alt+A")
         self.editmenu.add_command(label="Edit", command=self.edit, accelerator="Ctrl+Alt+E")
-        self.editmenu.add_command(label="Remove", command=self.remove, accelerator="Ctrl+Alt+R")
-        self.editmenu.add_command(label="Clear", command=self.clear, accelerator="Ctrl+Alt+C")
+        self.editmenu.add_command(label="Remove", command=self.remove, accelerator="Del")
+        self.editmenu.add_command(label="Clear", command=self.clear, accelerator="Shift+Del")
         self.editmenu.add_separator()
         self.editmenu.add_command(label="Train Now!", command=self.train_now, accelerator="Ctrl+Alt+T")
         self.menubar.add_cascade(menu=self.editmenu, label="Edit")
+        # Create the "Help" menu
         self.helpmenu = Menu(self.menubar, tearoff=False)
         self.helpmenu.add_command(label="LearnWords Help", command=help_, accelerator="F1")
         self.helpmenu.add_separator()
@@ -58,6 +55,12 @@ class Editor(Tk):
         self.helpmenu.add_command(label="Contact me", command=contact_me, accelerator="Ctrl+Shift+F1")
         self.menubar.add_cascade(menu=self.helpmenu, label="Help")
 
+        # Configure weight
+        self.rowconfigure(0, weight=1)
+        for column_id in range(5):
+            self.columnconfigure(column_id, weight=1)
+            
+        # Create the widget to display the vocabulary words' list and its scrollbar
         self.wtree = Treeview(self, show="headings", columns=["word", "translation"], selectmode=EXTENDED)
         self.wtree.heading("word", text="Word")
         self.wtree.heading("translation", text="Translation")
@@ -65,114 +68,150 @@ class Editor(Tk):
         self.scrollbar = Scrollbar(self, command=self.wtree.yview)
         self.scrollbar.grid(row=0, column=6, sticky="ns")
         self.wtree.config(yscrollcommand=self.scrollbar.set)
+
+        # Create the buttons to edit the vocabulary
         Button(self, text="Add", command=self.add).grid(row=1, column=0, sticky="ew")
         Button(self, text="Edit", command=self.edit).grid(row=1, column=1, sticky="ew")
         Button(self, text="Remove", command=self.remove).grid(row=1, column=2, sticky="ew")
         Button(self, text="Clear", command=self.clear).grid(row=1, column=3, sticky="ew")
         Button(self, text="Train Now!", command=self.train_now).grid(row=1, column=4, columnspan=3, sticky="ew")
 
-        self.bind("<Delete>", self.remove)
+        # Create a frame for the statusbar
+        sbs_frame = Frame(self)
+        self.sel_sb = Label(sbs_frame, text="Nothing was selected", relief=RIDGE)
+        self.sel_sb.grid(row=0, column=0, sticky="ew")
+        self.mod_sb = Label(sbs_frame, text="Unmodified", relief=RIDGE)
+        self.mod_sb.grid(row=0, column=1, sticky="ew")
+        sbs_frame.grid(row=2, column=0, columnspan=7, sticky="ew")
+
+        # Set the basic values to the class attributes
+        self.saved = None
+        self.unsaved_prefix = None
+        self.filename = UNTITLED
+        self.set_saved(True)
+
+        # Configuring the hotkeys (English only)
         self.bind("<F1>", help_)
         self.bind("<Control-F1>", about)
         self.bind("<Control-Shift-F1>", contact_me)
-        self.bind("<Control-Key>", self.ctrl_hotkeys_handler)
-        self.bind("<Control-Alt-Key>", self.ctrl_alt_hotkeys_handler)
-        self.bind("<Control-Shift-Key>", self.ctrl_shift_hotkeys_handler)
-
-    def ctrl_hotkeys_handler(self, event):
-        if event.keysym_num in self.CTRL_HOTKEYS_DICT:
-            self.CTRL_HOTKEYS_DICT[event.keysym_num]()
-
-    def ctrl_alt_hotkeys_handler(self, event):
-        if event.keysym_num in self.CTRL_ALT_HOTKEYS_DICT:
-            self.CTRL_ALT_HOTKEYS_DICT[event.keysym_num]()
-
-    def ctrl_shift_hotkeys_handler(self, event):
-        if event.keysym_num in self.CTRL_SHIFT_HOTKEYS_DICT:
-            self.CTRL_SHIFT_HOTKEYS_DICT[event.keysym_num]()
-
-    def _tocontinue(self):
+        for key in ("NOSAET", "nosaet"):  # bind keys with letters to work with both UPPERCASE and lowercase English keys
+            self.bind("<Control-%s>" % key[0], self.new)
+            self.bind("<Control-%s>" % key[1], self.open_)
+            self.bind("<Control-%s>" % key[2], self.save)
+            self.bind("<Control-Shift-%s>" % key[2], self.save)
+            self.bind("<Control-Alt-%s>" % key[3], self.add)
+            self.bind("<Control-Alt-%s>" % key[4], self.edit)
+            self.bind("<Control-Alt-%s>" % key[5], self.train_now)
+            
+        self.bind("<Delete>", self.remove)
+        self.bind("<Shift-Delete>", self.clear)
+        # TODO: select all in the tree
+        
+    def can_be_closed(self):
+        """If vocabulary is not saved, and user is trying to create a new one/open another one/quit the app, app asks the user to save the vocabulary."""
         if not self.saved:
-            result = show_msg("Warning", "Do you want to save your learning plan?", "warning", "yesnocancel")
-            if result == "yes":
-                self.save()
-                return self.saved
+            result = show_msg("Warning", "Do you want to save your learning plan?", "warning", "yesnocancel")  # asks about an action
+            if result == "yes":  # if user asked to save,
+                self.save()  # it saves
+                if self.saved:
+                    self.wtree.delete(*self.wtree.get_children())  # clear the words list widget
+                    return True
             elif result == "no":
                 return True
             return False
         return True
 
-    def new(self):
-        if self._tocontinue():
-            self.wtree.delete(*self.wtree.get_children())
-            self.filename = UNTITLED
-            self.set_saved(True)
+    def new(self, _event=None):
+        """Creates a new vocabulary."""
+        if self.can_be_closed():  # if the file can be closed,
+            self.filename = UNTITLED  # set untitled filename
+            self.set_saved(True)  # set the "saved" state
 
-    def open_(self):
-        if self._tocontinue():
-            try:
-                lwp_file = askopenfile(mode="rb", filetypes=[("LearnWords Plan", "*.lwp")])
-            except:
-                showerror("Error", "Couldn't open the file. Check file location and your permission to open it.")
-            else:
-                if lwp_file:
-                    try:
-                        lwp_data = pickle.load(lwp_file)
-                    except PermissionError:
-                        showerror("Error", "Unable to access this file! Check your permissions for reading.")
-                    except pickle.UnpicklingError as error:
+    def open_(self, _event=None):
+        """Opens a vocabulary."""
+        if self.can_be_closed():  # if the file can be closed,
+            try:  # try to
+                lwp_file = askopenfile(mode="rb", filetypes=[("LearnWords Vocabulary", "*.lwv")])  # ask a LWV (LearnWords Vocabulary) file to open
+            except FileNotFoundError as details:  # if submitted file disappeared suddenly
+                showerror("Error", "Couldn't open the file. Check file location.\n\nDetails: FileNotFoundError (%s)" % details)
+            except PermissionError as details:  # if the access to the file denied
+                showerror("Error", "Couldn't open the file. Check your permissions to read it.\n\nDetails: PermissionError (%s)" % details)
+            except Exception as details:  # if any other problem happened
+                showerror("Error", "During opening the file unexpected error occured\n\nDetails: %s (%s)" % (details.__class__.__name__, details))
+            else:  # if all is OK,
+                if lwp_file:  # if anything was opened...
+                    try:  # try to
+                        lwp_data = pickle.load(lwp_file)  # read the vocabulary
+                    except pickle.UnpicklingError as details:  # if the file is damaged, or its format is unsupported
                         showerror("Error",
-                                  "The file is corrupted or has an unsupported format!\n\nDetails: {}".format(error))
-                    else:
+                                  "The file is corrupted or has an unsupported format!\n\nDetails: %s" % details)
+                    except Exception as details:  # if unexpected error occured,
+                        showerror("Error",
+                                  "During opening the file unexpected error occured\n\nDetails: %s (%s)" % (details.__class__.__name__, details))
+                    else:  # if the file is unpickleable,
                         try:
-                            validate_lwp_data(lwp_data)
-                        except AssertionError:
+                            validate_lwp_data(lwp_data)  # check its format
+                        except AssertionError:  # if it is invalid,
                             showerror("Error",
                                       "The file is corrupted or has an unsupported format!\n\nDetails: invalid object is pickled.")
                         else:
-                            self.wtree.delete(*self.wtree.get_children())
-                            for pair in lwp_data:
+                            self.wtree.delete(*self.wtree.get_children())  # clear the words-list,
+                            for pair in lwp_data:  # and insert the words from opened vocabulary there
                                 self.wtree.insert("", END, values=pair)
-                            self.set_saved(True)
-                            self.filename = lwp_file.name
-                            self.update_title()
-    def save(self):
-        if self.filename != UNTITLED:
-            try:
-                outfile = open(self.filename, "wb")
-                pickle.dump([tuple(map(str, self.wtree.item(child)["values"])) for child in self.wtree.get_children()],
-                            outfile)
-                outfile.close()
-                self.filename = outfile.name
-                self.set_saved(True)
-            except:
-                showerror("Error", "Sorry, an unexpected error occurred!")
-        else:
-            self.save_as()
+                            self.set_saved(True)  # set state to saved
+                            self.filename = lwp_file.name  # update the filename value
+                            self.update_title()  # update the title of the main window
 
-    def save_as(self):
-        try:
-            outfile = asksaveasfile(mode="wb", defaultextension=".", filetypes=[("LearnWords Plan", ".lwp")])
-        except:
-            showerror("Error", "Couldn't open the file. Probably, it doesn't exists or you have not permissions")
-        else:
-            if outfile:
-                try:
-                    pickle.dump(
-                        [tuple(map(str, self.wtree.item(child)["values"])) for child in self.wtree.get_children()],
-                        outfile)
-                except:
-                    showerror("Error", "Sorry, an unexpected error occurred!")
-                else:
-                    outfile.close()
-                    self.filename = outfile.name
-                    self.set_saved(True)
+    def _save(self, filename):
+        """Provides save mechanism (that basic operation that are repeated both when saving, and saving as."""
+        try:  # try to
+            outfile = open(filename, "wb")  # try to open a file to write
+            pickle.dump([tuple(map(str, self.wtree.item(child)["values"])) for child in self.wtree.get_children()],
+                        outfile)  # get the vocabulary content and dump it to selected file
+            outfile.close()  # now we can close the outfile
+            self.filename = outfile.name  # update the opened file's filename, if changed
+            self.set_saved(True)  # set state to saved
+        except PermissionError as details:  # if there is a problem with access permissions,
+            showerror("Error", "During saving the file an error occured. Check your write permissions\n\nDetails: %s" % details)
+        except Exception as details:  # if there is an unexpected problem occured,
+            showerror("Error", "During saving the file an unexpected error occured.\n\nDetails: %s (%s)" % details.__class__.__name__, details)
+        
+    def save(self, _event=None):
+        """Saves the file to the same path and filename, if untitled - calls save as."""
+        if self.filename == UNTITLED:  # if the file was already saved (even during the other session, and then opened now),
+            self.save_as() # save as (to ask user how to name the file)
+        else:  # if the file is untitled
+            self._save(self.filename)  # save the file with the same filename  
+            
+    def save_as(self, _event=None):
+        try:  # try to
+            outfilename = asksaveasfilename(defaultextension=".", filetypes=[("LearnWords Plan", ".lwp")])  # ask a user for the filename to save to
+        except Exception as details:  # if an unexpected problem occured,
+            showerror("Error", "An unexpected error occured.\n\nDetails: %s (%s)" % (details, details.__class__.__name__))
+        else:  # if could get the filename,
+            if outfilename:  # if user selected the file (if he canceled the operation, outfilename will equal to None)
+                self._save(outfilename)  # save the vocabulary to selected file
+
+    def statistics(self):
+        alphabet_dict = {}
+        for word_pair in self.wtree.get_children():
+            first_letter = self.wtree.item(word_pair)["values"][0][0].upper()
+            if first_letter in alphabet_dict:
+                alphabet_dict[first_letter] += 1
+            else:
+                alphabet_dict[first_letter] = 1
+        result_list = ["By first letters:"]
+        result_list.extend(["{} - {}".format(first_letter, count) for first_letter,
+                                                                      count in sorted(alphabet_dict.items())])
+        result_list.append("\nTotally: {}".format(len(self.wtree.get_children())))
+        showinfo("Statistics", ("\n".join(result_list)))
 
     def exit_(self):
-        if self._tocontinue():
+        """Exits the app."""
+        if self.can_be_closed():
             self.destroy()
-
-    def add(self):
+# TODO: add and edit the cells, not opening a toplevel
+    def add(self, _event=None):
         to_add = Edit("Add")
         if to_add.data:
             self.wtree.insert("", END, values=to_add.data)
@@ -181,7 +220,7 @@ class Editor(Tk):
             self.wtree.selection_set(self.wtree.get_children()[-1])
             self.wtree.yview_moveto(1)
 
-    def edit(self):
+    def edit(self, _event=None):
         selection = self.wtree.selection()
         if len(selection) == 0:
             showinfo("Information", "Select a \"word-translation\" couple at first!")
@@ -197,40 +236,47 @@ class Editor(Tk):
                 self.set_saved(False)
 
     def remove(self, _event=None):
-        if self.wtree.selection():
+        """Remove a word (or some words) from the vocabulary."""
+        if self.wtree.selection():  # if something is selected,
             if yesno2bool(show_msg("Warning",
-                                   "All selected words' couples will be permanently deleted. Do you want to continue?\nNote this action cannot be undone!",
-                                   "warning", "yesno")):
-                self.wtree.delete(*self.wtree.selection())
-                self.set_saved(False)
-        else:
+                                   "Do you want to remove all the selected (%s) word's pairs?\nNote this action cannot be undone!" % len(self.wtree.selection()),
+                                   "warning", "yesno")):  # ask the user to continue deletion
+                self.wtree.delete(*self.wtree.selection())  # delete selected words
+                self.set_saved(False)  # set saved state to unsaved
+        else:  # if nothing is selected,
             showinfo("Information",
                      "Choose something at first.\nIf you want to remove all the words from the list, click \"Clear\"")
 
-    def clear(self):
-        if self.wtree.get_children():
+    def clear(self, _event=None):
+        """Clears all the vocabulary."""
+        if self.wtree.get_children():  # if there is any words in vocabulary,
             if yesno2bool(show_msg("Warning",
-                                   "All the couples from this list will be permanently deleted. Do you want to continue?\nNote this action cannot be undone!",
-                                   "warning", "yesno")):
-                self.wtree.delete(*self.wtree.get_children())
-                self.set_saved(False)
-        else:
-            showinfo("Information", "The list is empty. Is it already cleared?")
+                                   "All the couples (%s) from this list will be permanently deleted. Do you want to continue?\nNote this action cannot be undone!" % len(self.wtree.get_children()),
+                                   "warning", "yesno")):  # ask does user want to continue with clearing
+                self.wtree.delete(*self.wtree.get_children())  # clear the vocabulary
+                self.set_saved(False)  # set state to unsaved
+        else:  # if there is some words in vocabulary,
+            showinfo("Information", "The vocabulary is empty. Is it already cleared?")
 
-    def train_now(self):
+    def train_now(self, _event=None):
+        """Opens the Trainer to train the vocabulary."""
         pass
 
     def set_saved(self, state):
-        if state:
-            self.saved = True
-            self.unsaved_prefix = ""
-        else:
-            self.saved = False
-            self.unsaved_prefix = "*"
-        self.update_title()
+        """Set saved attribute to state."""
+        if state:  # if state == True
+            self.saved = True  # set saved attribute to True
+            self.unsaved_prefix = ""  # hide the "unsaved" asterisk at the start of the title
+            self.mod_sb["text"] = "Unmodified"  # update the statusbar value
+        else:  # if state == False
+            self.saved = False  # set saved attribute to False
+            self.unsaved_prefix = "*"  # show the "unsaved" asterisk at the start of the title
+            self.mod_sb["text"] = "Modified"  # update the statusbar value
+        self.update_title()  # update the title
 
     def update_title(self):
-        self.title("{}{} - LearnWords 1.0 Editor".format(self.unsaved_prefix, self.filename))
+        """Updates the title of the app."""
+        self.title("%s%s - LearnWords 1.0 Editor" % (self.unsaved_prefix, self.filename))
 
 
 class Edit(Toplevel):

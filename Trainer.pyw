@@ -11,40 +11,42 @@ try:
 except ImportError:
     # otherwise
     pass
-from playsound import playsound
 import random
 import pickle
 import os
+import sys
+
+from playsound import playsound
+import pystray
 
 from ConfigureTrainer import ConfigureTrainer
-from utils import yesno2bool, validate_users_dict, validate_lwp_data, reverse_pairs, help_, about, contact_me
+from utils import yesno2bool, validate_users_dict, validate_lwp_data, reverse_pairs, help_, about, contact_me, filter_stats
 
 
 # TODO: fix back function
 # TODO: add timer and score viewer in the right down corner of the window
-## TODO: add updating of stats after every game
 # TODO: add opening from Editor and from a .lwp file
 # TODO: add config dialog
-# TODO: shuffle the translations' list (non-tried, good, bad separately)
+# TODO: shuffle the translations' list (unknown, good, bad separately)
 # TODO: to make the entered password character turn into the black circles only after a second
 # TODO: configure the smart timer
 
 class Trainer(Tk):
-    def __init__(self, learning_plan=None, lwp_filename=None, *args, **kwargs):
+    def __init__(self, lwp_filename=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.resizable(False, False)  # make the trainer window unresizable
-        self.after(1, lambda: self.focus_force())  # focus to the trainer window on start
-        ul_frame = UserLoginFrame()  # create frame for user logging
-        if ul_frame.user.get():  # if user has been logged in,
-            ul_frame.grid_forget()  # remove user logging frame from the screen,
-            HomeFrame(ul_frame.users_dict, ul_frame.user.get(), learning_plan,
-                      lwp_filename).grid()  # and show the home frame
+        self.withdraw()
+        ul_window = UserLoginWindow()  # create a toplevel for user logging
+        if ul_window.user.get():  # if user is logged in,
+            ul_window.destroy()  # destroy the user login window
+            HomeWindow(ul_window.users_dict, ul_window.user.get(), lwp_filename)  # and create the home window
 
 
-class UserLoginFrame(Frame):
+class UserLoginWindow(Toplevel):
     def __init__(self):
         super().__init__()
-        self.master.title("Login - LearnWords 1.0 Trainer")  # set title "Login" to the frame
+        self.title("Login - LearnWords 1.0 Trainer")  # set title "Login" to the frame
+        self.resizable(False, False)  # make the trainer window unresizable
+        self.after(1, lambda: self.focus_force())  # focus to the trainer window on start
         self.user = StringVar(self)  # create variable for username
         self.user.set("")  # now username is empty, and it stays empty if user won't log in.
         self.users_dict = {}  # dict for all the users, will be soon read from the "users.dat" file, if it exists
@@ -65,15 +67,15 @@ class UserLoginFrame(Frame):
         Button(self, text="Login as this user", command=self.login_as_this_user).grid(row=2, column=0, sticky="ew")
         Button(self, text="Add a new user", command=self.add_a_new_user).grid(row=2, column=1, sticky="ew")
         Button(self, text="Remove this user", command=self.remove_this_user).grid(row=2, column=2, sticky="ew")
-        Button(self, text="Cancel", command=self.master.destroy).grid(row=2, column=3, columnspan=2, sticky="ew")
-        # self.master.bind("<Escape>", lambda _event: self.master.destroy())
+        Button(self, text="Cancel", command=self.destroy).grid(row=2, column=3, columnspan=2, sticky="ew")
+        self.bind("<Escape>", lambda _event: self.destroy())
         self.update_ulist()  # update user list (it is empty)
         self.grid()  # grid this frame in the master window
         self.wait_variable(self.user)  # wait (don't return anything) while the user won't log in
 
     def login_double_click(self, event):
         if event.y <= 17 * self.userslistbox.size():  # if the mouse y on the users' list belongs to any username
-            self.login_as_this_user()  # login as the selected usere
+            self.login_as_this_user()  # login as the selected user
 
     def login_as_this_user(self, _event=None):
         selection = self.userslistbox.curselection()  # get user's selection
@@ -123,7 +125,7 @@ class UserLoginFrame(Frame):
                         showerror("Error", "Unable to access the user.dat file. Check your permissions for reading.")
                     self.update_ulist()  # update the users' list from the "users.dat"
                 else:
-                    showerror("Error", "Enter the right password!")  # if the wrong password is entered, show an error
+                    showerror("Error", "Enter the right password!")  # if the wrong password was entered, show an error
         else:
             showinfo("Information", "Choose what to remove at first.")  # if none is selected, show a message
 
@@ -135,12 +137,16 @@ class UserLoginFrame(Frame):
             except PermissionError:
                 # if it couldn't open "users.dat" due to permissions error, show an error and exit.
                 showerror("Error", "Couldn't open users.dat. Check your permissions for reading this file and retry.")
-                self.master.destroy()
+                self.destroy()
             except pickle.UnpicklingError as details:
                 # if it couldn't unpickle the "users.dat" - it's damaged, show an error, remove it, and then continue,
+                # TODO: do you want to delete? not I'll delete!
                 showerror("Error", "The users.dat is damaged. It'll be removed."
                                    " Add new users then.\n\nDetails: {}".format(details))
                 os.remove("users.dat")
+            except EOFError:
+                pass
+            # TODO: exceptions
             else:
                 try:
                     validate_users_dict(self.users_dict)  # if the users' dict is valid
@@ -154,11 +160,11 @@ class UserLoginFrame(Frame):
                     self.userslistbox.insert(END, *self.users_dict.keys())  # if all is OK insert all users to the list
         else:
             # Hide the empty main window (this frame wasn't grid yet)
-            self.master.withdraw()
+            self.withdraw()
             # show the message about the first run of the program.
             showinfo("Information", "Hello, dear user! Probably, this is the first run of this program."
                                     "\nAt first you need to Add a new user.")
-            self.master.deiconify()  # Show the main window now
+            self.deiconify()  # Show the main window now
         self.userslistbox.focus()  # focus on the users' list (to select a user without mouse, only with arrow keys)
         # And now select the first user from the list using .select_set(0) and .activate(0)
         self.userslistbox.select_set(0)
@@ -169,7 +175,8 @@ class AddUser(Toplevel):
     def __init__(self):
         super().__init__()
         self.resizable(False, False)  # make this dialog unresizable
-        self.transient(self.master)  # make it transient from its master (self.master)
+        # TODO: why doesn't it work?
+        # self.transient(self.master)  # make it transient from its master (self.master)
         self.title("Add User")  # set the title of the dialog to "Add User"
         self.grab_set()  # set grab to disable the master window controls while adding a new user
         self.data = None  # now data is None
@@ -182,7 +189,7 @@ class AddUser(Toplevel):
         self.pwd_entry.grid(row=1, column=1)  # grid this entry
         # when the username is entered and the user press "Enter" ("Return") key, Tkinter focus on the password entry
         self.username_entry.bind("<Return>", lambda _event: self.pwd_entry.focus())
-        # when both the username and the password are entered, app will submit the user's data on "Enter"
+        # when both the username and the password are entered, app submits the user's data on "Enter" press
         self.pwd_entry.bind("<Return>", self.ok)
         Button(self, text="OK", command=self.ok).grid(row=2, column=0, sticky="ew")  # create "OK" button
         Button(self, text="Cancel", command=self.destroy).grid(row=2, column=1, sticky="ew")  # create "Cancel" button
@@ -190,11 +197,8 @@ class AddUser(Toplevel):
 
     def ok(self, _event=None):
         if not self.username_entry.get():  # if the user skipped username entry, give him a warning
-            if not yesno2bool(show_msg("Warning",
-                                       "It's highly unrecommended to create users with empty usernames. "
-                                       "Do you want to continue?",
-                                       "warning", "yesno")):
-                return
+            showwarning("Warning", "Cannot create a user without username! Enter a username, please!")
+            return
         if not self.pwd_entry.get():  # if the user skipped password entry, give him a warning
             if not yesno2bool(show_msg("Warning",
                                        "It's highly unrecommended to create users with empty passwords. "
@@ -207,25 +211,25 @@ class AddUser(Toplevel):
         self.destroy()  # destroys the dialog
 
 
-class HomeFrame(Frame):
-    def __init__(self, users_dict, user, lwp_filename, learning_plan, *args, **kwargs):
+class HomeWindow(Toplevel):
+    def __init__(self, users_dict, user, lwp_filename, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
+        # TODO: hotkeys support
         self.CTRL_HOTKEYS_DICT = {111: self.open_lwp, 1097: self.open_lwp, 79: self.open_lwp, 1065: self.open_lwp}
         self.CTRL_SHIFT_HOTKEYS_DICT = {67: self.configure_trainer, 1057: self.configure_trainer,
                                         99: self.configure_trainer, 1089: self.configure_trainer}
 
-        self.master.title("{} - Home ({}) - LearnWords 1.0".format("Untitled", user))  # set master window's title
-        # create lists for good, bad, and non-tried words
+        self.focus_force()
+        self.title("{} - Home ({}) - LearnWords 1.0".format("Untitled", user))  # set master window's title
+        # create lists for good, bad, and unknown words
         self.good = []
         self.bad = []
-        self.non_tried = []
+        self.unknown = []
         # get users_dict and username (for stats)
         self.users_dict = users_dict
         self.user = user
-        # get learning plan and .lwp filename
-        self.learning_plan = learning_plan
-        self.lwp_filename = lwp_filename
+        self.learning_plan = None
+        self.lwp_filename = lwp_filename # get .lwp filename
         # create menus
         self.menubar = Menu(self.master, tearoff=False)
         self.filemenu = Menu(self.menubar, tearoff=False)
@@ -243,13 +247,18 @@ class HomeFrame(Frame):
         self.helpmenu.add_command(label="About LearnWords", accelerator="Ctrl+F1")
         self.helpmenu.add_command(label="Contact me", accelerator="Ctrl+Shift+F1")
         self.menubar.add_cascade(label="Help", menu=self.helpmenu)
-        self.master.config(menu=self.menubar)  # set master window's menu = self.menubar
+        self.config(menu=self.menubar)  # set master window's menu = self.menubar
 
+        # Configure weight
+        self.rowconfigure(0, weight=1)
+        for column_id in (1, 2, 3, 4, 7):
+            self.columnconfigure(column_id, weight=1)
+        
         # create and configure treeview for showing the words pairs
         self.wtree = Treeview(self, show="headings", columns=["word", "translation"], selectmode=EXTENDED)
         self.wtree.heading("word", text="Word")
         self.wtree.heading("translation", text="Translation")
-        self.wtree.grid(row=0, column=0, columnspan=8, sticky="ew")  # grid it to the screen
+        self.wtree.grid(row=0, column=0, columnspan=8, sticky="nsew")  # grid it to the screen
         # create, grid, and configure self.scrollbar)
         self.scrollbar = Scrollbar(self, command=self.wtree.yview)
         self.scrollbar.grid(row=0, column=8, sticky="ns")
@@ -260,33 +269,40 @@ class HomeFrame(Frame):
         self.good_button.grid(row=1, column=1, sticky="ew")  # and grid it on the master window
         self.bad_button = Button(self, bg="red")  # create button for bad words pairs,
         self.bad_button.grid(row=1, column=2, sticky="ew")  # and grid it on the master window
-        self.non_tried_button = Button(self, bg="yellow")  # create button for non-tried words,
-        self.non_tried_button.grid(row=1, column=3, sticky="ew")  # and grid it on the master window
+        self.unknown_button = Button(self, bg="yellow")  # create button for unknown words,
+        self.unknown_button.grid(row=1, column=3, sticky="ew")  # and grid it on the master window
         self.total_button = Button(self, bg="white")  # create button for total quantity of words,
         self.total_button.grid(row=1, column=4, sticky="ew")  # and grid it on the master window
         Label(self, text="Words per game: ").grid(row=1, column=5, sticky="ew")  # create label "Words per game:"
         self.wpg_var = IntVar(self)  # create variable for quantity of words
         self.wpg_var.set(12)  # set it 12 by default
         self.wpg_spb = Spinbox(self, width=3, from_=1, to_=999, textvariable=self.wpg_var,
-                               validate="all", validatecommand=(self.master.register(self.validate_wpg), '%P'))
+                               validate="all", validatecommand=(self.register(self.validate_wpg), '%P'))
         self.wpg_spb.grid(row=1, column=6, sticky="ew")  # create the words per game spinbox
         self.wpg_spb.bind("<Return>", self.start)
-        Button(self, text="Start", command=self.start) \
+        Button(self, bg="#add8e6", text="Start! ▶", command=self.start) \
             .grid(row=1, column=7, columnspan=2, sticky="ew")  # create the start button
 
-        self.master.bind("<F1>", help_)
-        self.master.bind("<Control-F1>", about)
-        self.master.bind("<Control-Shift-F1>", contact_me)
-        self.master.bind("<Control-Key>", self.ctrl_hotkeys_handler)
-        self.master.bind("<Control-Shift-Key>", self.ctrl_shift_hotkeys_handler)
-
+        self.bind("<F1>", help_)
+        self.bind("<Control-F1>", about)
+        self.bind("<Control-Shift-F1>", contact_me)
+        self.bind("<Control-Key>", self.ctrl_hotkeys_handler)
+        self.bind("<Control-Shift-Key>", self.ctrl_shift_hotkeys_handler)
+        
         self.update_stats()  # get stats for this user
         self.get_words_list()  # get words' list
 
-    def open_lwp(self):
+        if self.lwp_filename:
+            self.open_lwp(self.lwp_filename)
+        print(self.learning_plan)
+
+    def open_lwp(self, lwp_filename=None):
         try:
             # try to open this file
-            file = askopenfile(mode="rb", filetypes=[("Learn Words Plan", ".lwp")])
+            if lwp_filename:
+                file = open(lwp_filename, "rb")
+            else:
+                file = askopenfile(mode="rb", filetypes=[("Learn Words Plan", ".lwp")])
             assert file
         except AssertionError:
             pass
@@ -310,18 +326,17 @@ class HomeFrame(Frame):
                               "Unable to open the file!\n\nDetails: it doesn't looks like a valid learning plan file!")
                 else:
                     # if it is a valid learning plan,
-                    self.get_words_list()  # get words list from the learning plan,
                     self.lwp_filename = file.name  # and set up the filename attribute
-                    self.master.title(
+                    self.get_words_list()  # get words list from the learning plan,
+                    self.title(
                         "{} - Home ({}) - LearnWords 1.0".format(self.lwp_filename, self.user))  # update the title
                     lwp_len = len(self.learning_plan)
-                    if len(self.learning_plan) > 12:
+                    if lwp_len > 12:
                         self.wpg_var.set(12)
                         self.wpg_spb.configure(to=lwp_len if lwp_len < 1000 else 999)
                     else:
                         self.wpg_var.set(lwp_len)
                         self.wpg_spb.configure(to=lwp_len)
-                    print(self.learning_plan)
 
     def configure_trainer(self):
         ConfigureTrainer()
@@ -335,44 +350,45 @@ class HomeFrame(Frame):
             self.CTRL_SHIFT_HOTKEYS_DICT[event.keysym_num]()
 
     def get_words_list(self):
-        # clear all the words' lists (good, bad and non_tried),
+        # clear all the words' lists (good, bad and unknown),
         self.good.clear()
         self.bad.clear()
-        self.non_tried.clear()
+        self.unknown.clear()
         self.wtree.delete(*self.wtree.get_children())  # and clear the list with the previous learning plan words' pairs
         if self.learning_plan:  # if any learning plan is opened,
             if self.lwp_filename in self.users_dict[self.user]["stats"]:  # if the user trained this file before
                 for pair in self.learning_plan:  # check every pair,
-                    if pair in self.users_dict[self.user]["stats"]["good"]:  # if it is in the list of the "good" pairs,
+                    if pair in self.users_dict[self.user]["stats"][self.lwp_filename]["good"]:  # if it is in the list of the "good" pairs,
                         self.wtree.insert("", END, values=pair, tag="good")  # add it to the pairs' list with tag "good"
                         self.good.append(pair)  # append pair to the list for good words' pairs
-                    elif pair in self.users_dict[self.user]["stats"]["bad"]:  # if it is in the list of the "bad" pairs,
+                    elif pair in self.users_dict[self.user]["stats"][self.lwp_filename]["bad"]:  # if it is in the list of the "bad" pairs,
                         self.wtree.insert("", END, values=pair, tag="bad")  # add it in the  list with tag "bad"
                         self.bad.append(pair)  # append pair to the list for bad words' pairs
                     else:
                         # if the word wasn't trained yet,
                         self.wtree.insert("", END, values=pair,
-                                          tag="non-tried")  # add it to the list with "non-tried" tag
-                        self.non_tried.append(pair)  # append the pair to the list for non-tried words' pairs
+                                          tag="unknown")  # add it to the list with "unknown" tag
+                        self.unknown.append(pair)  # append the pair to the list for unknown words' pairs
             else:
+                self.users_dict[self.user]["stats"][self.lwp_filename] = {"good": set(), "bad": set()}
                 # if the user opened this learning plan at first
                 for pair in self.learning_plan:  # add every pair
                     self.wtree.insert("", END, values=pair,
-                                      tag="non-tried")  # to the pairs' list with "non-tried" tag,
-                    self.non_tried.append(pair)  # and append to the list for non-tried words' pairs
+                                      tag="unknown")  # to the pairs' list with "unknown" tag,
+                    self.unknown.append(pair)  # and append to the list for unknown words' pairs
             # set appropriate colors to every word's pair        
             self.wtree.tag_configure("good", background="green")
             self.wtree.tag_configure("bad", background="red")
-            self.wtree.tag_configure("non-tried", background="yellow")
+            self.wtree.tag_configure("unknown", background="yellow")
             self.update_stats()  # and update the stats (buttons labels)
 
     def update_stats(self):
-        good, bad, non_tried, total = (len(self.good), len(self.bad), len(self.non_tried),
+        good, bad, unknown, total = (len(self.good), len(self.bad), len(self.unknown),
                                        len(self.wtree.get_children())) if self.lwp_filename else ("?", "?", "?", "?")
-        self.good_button["text"] = "Good: {}".format(good)
-        self.bad_button["text"] = "Bad: {}".format(bad)
-        self.non_tried_button["text"] = "Non-tried: {}".format(non_tried)
-        self.total_button["text"] = "Total: {}".format(total)
+        self.good_button["text"] = "Good: %s" % good
+        self.bad_button["text"] = "Bad: %s" % bad
+        self.unknown_button["text"] = "Unknown: %s" % unknown
+        self.total_button["text"] = "Total: %s" % total
 
     def validate_wpg(self, P):
         if P.isdigit():
@@ -380,18 +396,37 @@ class HomeFrame(Frame):
                 return True
         elif P == "":
             return True
-        self.master.bell()
+        self.bell()
         return False
 
     def back(self):
-        self.master.destroy()
+        self.destroy()
         Trainer(self.learning_plan, self.lwp_filename)
 
     def start(self, _event=None):
+        print(self.users_dict)
         if self.lwp_filename:  # if any learning plan is opened,
-            self.master.config(menu=Menu())  # hide the menu,
-            self.grid_remove()  # and hide this frame
-            print(GymFrame(self.good, self.bad, self.non_tried, self.wpg_var.get()).updated_stats)  # and create the gym frame
+            self.withdraw()
+            gym = GymWindow(self.good, self.bad, self.unknown, self.wpg_var.get())
+            # TODO: if canceled, no error
+            print(gym.new_good, gym.new_bad)
+            if self.lwp_filename not in self.users_dict[self.user]["stats"]:
+                self.users_dict[self.user]["stats"][self.lwp_filename] = {"good": set(), "bad": set()}
+            new_good = filter_stats(gym.new_good, self.learning_plan)
+            new_bad = filter_stats(gym.new_bad, self.learning_plan)
+            for pair in new_good:
+                if pair in self.users_dict[self.user]["stats"][self.lwp_filename]["bad"]:
+                    self.users_dict[self.user]["stats"][self.lwp_filename]["bad"].remove(pair)
+                self.users_dict[self.user]["stats"][self.lwp_filename]["good"].add(pair)
+            for pair in new_bad:
+                if pair in self.users_dict[self.user]["stats"][self.lwp_filename]["good"]:
+                    self.users_dict[self.user]["stats"][self.lwp_filename]["good"].remove(pair)
+                self.users_dict[self.user]["stats"][self.lwp_filename]["bad"].add(pair)
+            print(self.users_dict)
+            udat = open("users.dat", "wb")
+            pickle.dump(self.users_dict, udat)  # TODO: exceptions handling
+            self.get_words_list()
+            self.deiconify()
         else:
             # if no learning plan was opened, show an error
             showerror("Error",
@@ -399,28 +434,32 @@ class HomeFrame(Frame):
                       "\nTo create a new learning plan, create it using Editor")
 
 
-class GymFrame(Frame):
-    def __init__(self, good, bad, non_tried, wpg, *args, **kwargs):
+class GymWindow(Toplevel):
+    # TODO: bug when all except the last words are good-answered
+    # TODO: filter only EN-RU in the new_<...> dicts, without RU-EN
+    def __init__(self, good, bad, unknown, wpg, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.master.title("Gym - LearnWords 1.0")  # set the master window title "Gym..."
+        self.title("Gym - LearnWords 1.0")  # set the master window title "Gym..."
         self.tg_after = None
-        self.updated_stats = {}
+        self.new_good = set()
+        self.new_bad = set()
         self.score = 0  # at first the score is 0
         # generate the words' pairs list (shuffle all the lists, and then generate a "smart" queue)
         random.shuffle(good)
         random.shuffle(bad)
-        random.shuffle(non_tried)
-        self.queue = (2 * bad + non_tried + good)[:wpg]
-        self.start_queue = self.queue
+        random.shuffle(unknown)
+        self.queue = (2 * bad + unknown + good)[:wpg]
+        self.queue += reverse_pairs(self.queue)
         """rp_bad = reverse_pairs(bad)
-        rp_ntr = reverse_pairs(non_tried)
+        rp_ntr = reverse_pairs(unknown)
         rp_good = reverse_pairs(good)
         random.shuffle(rp_bad)
         random.shuffle(rp_ntr)
         random.shuffle(rp_good)
         reversed_pairs = rp_bad + rp_ntr + rp_good
         self.queue += reversed_pairs[:wpg]"""
-        self.queue += reverse_pairs(self.queue)
+        self.totally = len(self.queue)
+        print("Queue:", self.queue)
         self.pair = None  # current pair is None (at first)
         self.word_label = Label(self)  # create a label for the word,
         self.word_label.grid(row=0, column=0, columnspan=5, sticky="ew")  # and grid it
@@ -437,6 +476,9 @@ class GymFrame(Frame):
         self.ok_button.grid(row=2, column=3, sticky="ew")  # grid the "OK" button
         self.skip_button = Button(self, text="Skip", command=self.skip)  # create the "Skip" button
         self.skip_button.grid(row=2, column=4, sticky="ew")  # grid the the "Skip" button
+        self.score_label = Label(self)
+        self.score_label.grid(row=2, column=5, sticky="ew")
+        self.update_score_label()
         self.pass_a_word()  # get the first word
         self.grid()
         self.wait_window()
@@ -469,11 +511,11 @@ class GymFrame(Frame):
     def ok(self, _event=None):
         if self.is_right_answer():
             playsound("sound/shot.wav", False)
-            if self.pair in self.updated_stats:
-                self.updated_stats[self.pair] += 1
-            else:
-                self.updated_stats[self.pair] = 1
             self.score += 1
+            self.update_score_label()
+            if (not self.pair in self.new_good) and (not tuple(reversed(self.pair)) in self.new_good):
+                if (not self.pair in self.new_bad) and (not tuple(reversed(self.pair)) in self.new_bad):  # if it is not in the bads' set,
+                    self.new_good.add(self.pair)  # add it to the goods' one
             self.time_pb.stop()
             self.after_cancel(self.tg_after)
             self.pass_a_word()
@@ -484,6 +526,8 @@ class GymFrame(Frame):
         if self.is_right_answer() and action == "Timeout!":
             self.ok()
         else:
+            self.totally += 2
+            self.update_score_label()
             self.disable_controls()
             playsound("sound/skip.wav", False)
             self.time_pb.stop()
@@ -491,7 +535,13 @@ class GymFrame(Frame):
             self.translation_entry["state"] = "disabled"
             self.ok_button["state"] = "disabled"
             self.skip_button["state"] = "disabled"
-            for i in range(2):
+            if (not self.pair in self.new_bad) and (not tuple(reversed(self.pair)) in self.new_bad):
+                self.new_bad.add(self.pair)  # add it to bads' set
+                if self.pair in self.new_good:
+                    self.new_good.remove(self.pair)  # remove it from there
+                elif tuple(reversed(self.pair)) in self.new_good:  # if it is in goods' set,self.new_good.remove(tuple(reversed(self.pair)))
+                    self.new_good.remove(tuple(reversed(self.pair)))
+            for _ in range(2):
                 self.queue.append(self.pair)
             self.after(3000, self.pass_a_word)
 
@@ -513,8 +563,11 @@ class GymFrame(Frame):
     def is_right_answer(self):
         return True if self.translation_entry.get().replace("ё", "е").replace("Ё", "Е") == self.pair[1].\
             replace("ё", "е").replace("Ё", "Е") else False
-
-
-
+    def update_score_label(self):
+        self.score_label["text"] = "%s/%s" % (self.score, self.totally)
 if __name__ == "__main__":
-    Trainer().mainloop()
+    if len(sys.argv) > 1:
+        print(sys.argv)
+        Trainer(sys.argv[-1].replace("\\", "/")).mainloop()
+    else:
+        Trainer().mainloop()
