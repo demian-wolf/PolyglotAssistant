@@ -11,25 +11,24 @@ try:
 except ImportError:
     # otherwise
     pass
+import winsound
 import random
 import pickle
 import os
 import sys
 
-from playsound import playsound
 import pystray
 
-from ConfigureTrainer import ConfigureTrainer
-from utils import yesno2bool, validate_users_dict, validate_lwp_data, reverse_pairs, help_, about, contact_me, filter_stats
+from utils import yesno2bool, validate_users_dict, validate_lwp_data, reverse_pairs, help_, about, contact_me, tidy_stats
 
 
-# TODO: fix back function
-# TODO: add timer and score viewer in the right down corner of the window
-# TODO: add opening from Editor and from a .lwp file
+## TODO: fix back function
+## TODO: add timer and score viewer in the right down corner of the window
+## TODO: add opening from Editor and from a .lwp file
 # TODO: add config dialog
-# TODO: shuffle the translations' list (unknown, good, bad separately)
+## TODO: shuffle the translations' list (unknown, good, bad separately)
 # TODO: to make the entered password character turn into the black circles only after a second
-# TODO: configure the smart timer
+## TODO: configure the smart timer
 
 class Trainer(Tk):
     def __init__(self, lwp_filename=None, *args, **kwargs):
@@ -95,17 +94,39 @@ class UserLoginWindow(Toplevel):
         if udata:  # if the new user's adding was not canceled,
             if "users.dat" in os.listdir(os.path.curdir):  # if there is "users.dat" in the app path already
                 try:
-                    ulist = pickle.load(open("users.dat", "rb"))  # try to read it,
-                except:
-                    showerror("Error", "")  # if read failed, show an appropriate error,
-                    ulist = {}  # and create an empty users' dictionary
+                    udat = open("users.dat", "rb")
+                except FileNotFoundError as details:  # if submitted file disappeared suddenly
+                    showerror("Error", "Couldn't open the users.dat file. Check its location. Application will exit now.\n\nDetails: FileNotFoundError (%s)" % details)
+                    self.destroy()
+                except PermissionError as details:  # if the access to the file denied
+                    showerror("Error", "Couldn't open the users.dat file. Check your permissions to read it. Application will exit now.\n\nDetails: PermissionError (%s)" % details)
+                    self.destroy()
+                except Exception as details:  # if any other problem happened
+                    showerror("Error", "During opening the users.dat file unexpected error occured. Application will exit now.\n\nDetails: %s (%s)" % (details.__class__.__name__, details))
+                    self.destroy()
+                else:
+                    try:
+                        ulist = pickle.load(udat)  # try to read it,
+                    except (pickle.UnpicklingError, EOFError) as details:  # if the file is damaged, or its format is unsupported
+                        showerror("Error",
+                                  "The users.dat is corrupted or has an unsupported format!\n\nDetails: %s" % details)
+                    except Exception as details:  # if unexpected error occured,
+                        showerror("Error",
+                                  "During opening the users.dat unexpected error occured\n\nDetails: %s (%s)" % (details.__class__.__name__, details))
             else:
                 ulist = {}  # if there is no "users.dat" in the app path, create a new users' dictionary
             ulist[udata[0]] = {"password": udata[1], "stats": {}}  # assign new user's name with his password and stats
             try:
                 pickle.dump(ulist, open("users.dat", "wb"))  # dump it all into new "users.dat" file
-            except:
-                showerror("Error", "Unable to dump the user's data to \"users.dat\"! His/her data won't be saved now")
+            except Exception as details:
+                while yesno2bool(show_msg("Error", "During saving the users.dat file an unexpected error occured. New user was not saved. "
+                         "Do you want to retry?\n\nDetails: %s (%s)" % (details.__class__.__name__, details), "error", "yesno")):
+                    try:
+                        pickle.dump(ulist, open("users.dat", "wb"))
+                    except:
+                        pass
+                    else:
+                        break
         self.update_ulist()  # update the users' list
 
     def remove_this_user(self):
@@ -139,11 +160,16 @@ class UserLoginWindow(Toplevel):
                 showerror("Error", "Couldn't open users.dat. Check your permissions for reading this file and retry.")
                 self.destroy()
             except pickle.UnpicklingError as details:
-                # if it couldn't unpickle the "users.dat" - it's damaged, show an error, remove it, and then continue,
-                # TODO: do you want to delete? not I'll delete!
-                showerror("Error", "The users.dat is damaged. It'll be removed."
-                                   " Add new users then.\n\nDetails: {}".format(details))
-                os.remove("users.dat")
+                if yesno2bool(show_msg("Error", "The users.dat is damaged. "
+                                       "Do you want to remove it and add new users then?\n\nDetails: %s (%s)" %
+                                       (details.__class__.__name__, details), "error", "yesno")):
+                    try:
+                        os.remove("users.dat")
+                    except Exception as details:
+                        showerror("Error", "Couldn't remove the damaged users.dat file.\n\nDetails: %s (%s)" % (details.__class__.__name__, details))
+                    self.focus_force()
+                else:
+                    self.destroy()
             except EOFError:
                 pass
             # TODO: exceptions
@@ -294,7 +320,7 @@ class HomeWindow(Toplevel):
 
         if self.lwp_filename:
             self.open_lwp(self.lwp_filename)
-        print(self.learning_plan)
+        # print(self.learning_plan)
 
     def open_lwp(self, lwp_filename=None):
         try:
@@ -404,16 +430,14 @@ class HomeWindow(Toplevel):
         Trainer(self.learning_plan, self.lwp_filename)
 
     def start(self, _event=None):
-        print(self.users_dict)
         if self.lwp_filename:  # if any learning plan is opened,
             self.withdraw()
             gym = GymWindow(self.good, self.bad, self.unknown, self.wpg_var.get())
             # TODO: if canceled, no error
-            print(gym.new_good, gym.new_bad)
             if self.lwp_filename not in self.users_dict[self.user]["stats"]:
                 self.users_dict[self.user]["stats"][self.lwp_filename] = {"good": set(), "bad": set()}
-            new_good = filter_stats(gym.new_good, self.learning_plan)
-            new_bad = filter_stats(gym.new_bad, self.learning_plan)
+            new_good = tidy_stats(gym.new_good, self.learning_plan)
+            new_bad = tidy_stats(gym.new_bad, self.learning_plan)
             for pair in new_good:
                 if pair in self.users_dict[self.user]["stats"][self.lwp_filename]["bad"]:
                     self.users_dict[self.user]["stats"][self.lwp_filename]["bad"].remove(pair)
@@ -421,10 +445,20 @@ class HomeWindow(Toplevel):
             for pair in new_bad:
                 if pair in self.users_dict[self.user]["stats"][self.lwp_filename]["good"]:
                     self.users_dict[self.user]["stats"][self.lwp_filename]["good"].remove(pair)
-                self.users_dict[self.user]["stats"][self.lwp_filename]["bad"].add(pair)
-            print(self.users_dict)
-            udat = open("users.dat", "wb")
-            pickle.dump(self.users_dict, udat)  # TODO: exceptions handling
+                self.users_dict[self.user]["stats"][self.lwp_filename]["bad"].add(pair)      
+            try:
+                udat = open("users.dat", "wb")
+                pickle.dump(self.users_dict, udat)
+            except Exception as details:  # if there is an unexpected problem occured,
+                while yesno2bool(show_msg("Error", "During saving the users.dat file an unexpected error occured. Statistics were not saved. "
+                         "Do you want to retry?\n\nDetails: %s (%s)" % (details.__class__.__name__, details), "error", "yesno")):
+                    try:
+                        udat = open("users.dat", "wb")
+                        pickle.dump(self.users_dict, udat)
+                    except:
+                        pass
+                    else:
+                        break
             self.get_words_list()
             self.deiconify()
         else:
@@ -435,9 +469,9 @@ class HomeWindow(Toplevel):
 
 
 class GymWindow(Toplevel):
-    # TODO: bug when all except the last words are good-answered
-    # TODO: filter only EN-RU in the new_<...> dicts, without RU-EN
     def __init__(self, good, bad, unknown, wpg, *args, **kwargs):
+        # TODO: score counter
+        # TODO: automatic time counter
         super().__init__(*args, **kwargs)
         self.title("Gym - LearnWords 1.0")  # set the master window title "Gym..."
         self.tg_after = None
@@ -459,7 +493,6 @@ class GymWindow(Toplevel):
         reversed_pairs = rp_bad + rp_ntr + rp_good
         self.queue += reversed_pairs[:wpg]"""
         self.totally = len(self.queue)
-        print("Queue:", self.queue)
         self.pair = None  # current pair is None (at first)
         self.word_label = Label(self)  # create a label for the word,
         self.word_label.grid(row=0, column=0, columnspan=5, sticky="ew")  # and grid it
@@ -498,7 +531,7 @@ class GymWindow(Toplevel):
             self.enable_controls()
         else:
             self.disable_controls()
-            playsound("sound/applause.wav", False)
+            winsound.PlaySound("sound/applause.wav", winsound.SND_ASYNC)
             self.word_label["text"] = "Hooray! You've shot all the words!"
             self.translation_entry["state"] = "disabled"
             self.ok_button["state"] = "disabled"
@@ -510,7 +543,7 @@ class GymWindow(Toplevel):
 
     def ok(self, _event=None):
         if self.is_right_answer():
-            playsound("sound/shot.wav", False)
+            winsound.PlaySound("sound/shot.wav", winsound.SND_ASYNC)
             self.score += 1
             self.update_score_label()
             if (not self.pair in self.new_good) and (not tuple(reversed(self.pair)) in self.new_good):
@@ -520,7 +553,8 @@ class GymWindow(Toplevel):
             self.after_cancel(self.tg_after)
             self.pass_a_word()
         else:
-            playsound("sound/wrong.wav", False)
+            pass
+            winsound.PlaySound("sound/wrong.wav", winsound.SND_ASYNC)
 
     def _skip(self, action):
         if self.is_right_answer() and action == "Timeout!":
@@ -529,7 +563,7 @@ class GymWindow(Toplevel):
             self.totally += 2
             self.update_score_label()
             self.disable_controls()
-            playsound("sound/skip.wav", False)
+            winsound.PlaySound("sound/skip.wav", winsound.SND_ASYNC)
             self.time_pb.stop()
             self.word_label["text"] = "Oops! {} \"{}\" <=> \"{}\"".format(action, *self.pair)
             self.translation_entry["state"] = "disabled"
@@ -565,9 +599,10 @@ class GymWindow(Toplevel):
             replace("ё", "е").replace("Ё", "Е") else False
     def update_score_label(self):
         self.score_label["text"] = "%s/%s" % (self.score, self.totally)
+        
 if __name__ == "__main__":
     if len(sys.argv) > 1:
-        print(sys.argv)
+        # TODO: sys.argv good work
         Trainer(sys.argv[-1].replace("\\", "/")).mainloop()
     else:
         Trainer().mainloop()
