@@ -11,7 +11,7 @@ import sys
 import googletrans
 
 from EditorFrame import EditorFrame
-from utils import yesno2bool, help_, about, contact_me
+from utils import yesno2bool, retrycancel2bool, help_, about, contact_me
 
 
 class Main(Tk):
@@ -63,7 +63,9 @@ class Main(Tk):
         self.helpmenu.add_command(label="Contact me", command=contact_me, accelerator="Ctrl+Shift+F1")
         self.menubar.add_cascade(menu=self.helpmenu, label="Help")  # attach it to the menubar
 
-        # let the widgets to stretch using grid_columnconfigure method
+        self.iconbitmap("icon_32x32.ico")  # show the left-top window icon
+
+        # let the widgets stretch using grid_columnconfigure method
         self.grid_columnconfigure(0, weight=1)
         
         self.textbox = Text(self, wrap="word", state="disabled")  # create the textbox widget,
@@ -86,7 +88,7 @@ class Main(Tk):
         self.dest_cbox.grid(row=2, column=4)  # and show it using grid geometry manager
         askword_frame = Frame(self)  # create the frame for the word and translation
         askword_frame.grid(row=3, column=2, columnspan=3, sticky="we")  # and show it using grid geometry manager
-        askword_frame.grid_columnconfigure(1, weight=1)  # let the widgets to stretch by XY inside the askword_frame
+        askword_frame.grid_columnconfigure(1, weight=1)  # let the widgets stretch by XY inside the askword_frame
         Label(askword_frame, text="Слово:").grid(row=0, column=0, sticky="w")  # create the "Word: " label
         word_entry = Entry(askword_frame, textvariable=self.word_variable)  # create an entry to enter the word
         word_entry.grid(row=0, column=1, sticky="we")  # create the Entry to enter the words
@@ -309,12 +311,15 @@ class Main(Tk):
             with open("bookmarks.dat", "wb") as file:  # open bookmarks.dat for writing
                 pickle.dump(self.bookmarks_data, file)  # update it with new bookmarks
         except Exception as details:  # if an error occured, show an appropriate warning and ask to retry
-            while askretrycancel("Error", "During adding a new bookmark an error occured. Would you like to retry?\n\nDetails: %s (%s)" % (details.__class__.__name__, details)):
+            while retrycancel2bool(show_msg("Error",
+                           "During adding a new bookmark an error occured. "
+                           "Would you like to retry?\n\nDetails: %s (%s)"
+                           % (details.__class__.__name__, details), icon="error", type="retrycancel")):
                 try:
                     with open("bookmarks.dat", "wb") as file:
                         pickle.dump(self.bookmarks_data, file)
-                except:
-                    pass
+                except Exception as new_details:
+                    details = new_details
                 else:
                     break
                 
@@ -338,8 +343,8 @@ def show_usage():
     """Shows the command-line usage, if called."""
     Tk().withdraw()
     showerror("Error", "You are trying to run this program in an unusual way.\n\nUsage:\nReadIt.exe text.*\nReadIt.exe vocabulary.lwv\nReadIt.exe text.* vocabulary.lwv")  # show the command-line usage
-    sys.exit(0)  # exit the app
-    
+    os._exit(0)
+
 if __name__ == "__main__":
     files = list(map(lambda s: s.replace("\\", "/"), sys.argv[1:]))  # get the command-line arguments (probably files)
     if len(files) > 0:  # if any files specified,

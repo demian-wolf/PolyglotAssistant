@@ -16,6 +16,18 @@ def yesno2bool(result):
     return True if result == "yes" else False
 
 
+def retrycancel2bool(result):
+    """
+    Returns True if the result equals "retry" and False otherwise (useful for the messageboxes).
+
+    :param result: user's answer that is returned by "yesno" messagebox
+    :type result: str
+    :return: a bool interpretation of the user's answer
+    :rtype: bool
+    """
+
+    return True if result == "retry" else False
+
 def help_(_event=None):
     """
     Calls the "Help" Dialog.
@@ -108,18 +120,20 @@ def reverse_pairs(data):
     """
     return [tuple(reversed(pair)) for pair in data]  # every pair is reversed now
 
-def tidy_stats(result, learning_plan):
+def tidy_stats(result, vocabulary_content):
     """
     Tidies the results (reverses pairs, that are reversed in learning plan).
 
     :param result: the result after the Gym
+    :param vocabulary_content: the contents of the vocabulary
     :type result: set
+    :type vocabulary_content: list(tuple, tuple, tuple...)
     :return: tidied result
     :rtype: set
     """
     new_result = set()
     for elem in result:
-        if elem in learning_plan:
+        if elem in vocabulary_content:
             new_result.add(elem)
         else:
             new_result.add(tuple(reversed(elem)))

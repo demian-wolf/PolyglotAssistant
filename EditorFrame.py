@@ -1,5 +1,5 @@
 from tkinter import *
-from tkinter.messagebox import showinfo, showerror, _show as show_msg
+from tkinter.messagebox import askquestion, showinfo, showerror, _show as show_msg
 from tkinter.filedialog import *
 from tkinter.ttk import Treeview, Entry, Scrollbar
 
@@ -14,14 +14,14 @@ class EditorFrame(Frame):
         
         # Configure weight
         self.rowconfigure(0, weight=1)
-        for column_id in range(5):
+        for column_id in range(4):
             self.columnconfigure(column_id, weight=1)
             
         # Create the widget to display the vocabulary words' list and its scrollbar
         self.wtree = Treeview(self, show="headings", columns=["word", "translation"], selectmode=EXTENDED)
         self.wtree.heading("word", text="Word")
         self.wtree.heading("translation", text="Translation")
-        self.wtree.grid(row=0, column=0, columnspan=5, sticky="nsew")
+        self.wtree.grid(row=0, column=0, columnspan=4, sticky="nsew")
         self.scrollbar = Scrollbar(self, command=self.wtree.yview)
         self.scrollbar.grid(row=0, column=6, sticky="ns")
         self.wtree.config(yscrollcommand=self.scrollbar.set)
@@ -31,7 +31,6 @@ class EditorFrame(Frame):
         Button(self, text="Edit", command=self.edit).grid(row=1, column=1, sticky="ew")
         Button(self, text="Remove", command=self.remove).grid(row=1, column=2, sticky="ew")
         Button(self, text="Clear", command=self.clear).grid(row=1, column=3, sticky="ew")
-        Button(self, text="Train Now!", command=self.train_now).grid(row=1, column=4, columnspan=3, sticky="ew")
 
         # Create a frame for the statusbar
         sbs_frame = Frame(self)
@@ -51,7 +50,6 @@ class EditorFrame(Frame):
             self.master.bind("<Control-%s>" % key[0], self.select_all)
             self.master.bind("<Control-Alt-%s>" % key[0], self.add)
             self.master.bind("<Control-Alt-%s>" % key[1], self.edit)
-            self.master.bind("<Control-Alt-%s>" % key[2], self.train_now)
             
         self.master.bind("<Alt-Delete>", self.remove)
         self.master.bind("<Shift-Delete>", self.clear)
@@ -132,7 +130,7 @@ class EditorFrame(Frame):
         except PermissionError as details:  # if there is a problem with access permissions,
             showerror("Error", "During saving the file an error occured. Check your write permissions\n\nDetails: %s" % details)
         except Exception as details:  # if there is an unexpected problem occured,
-            showerror("Error", "During saving the file an unexpected error occured.\n\nDetails: %s (%s)" % details.__class__.__name__, details)
+            showerror("Error", "During saving the file an unexpected error occured.\n\nDetails: %s (%s)" % (details.__class__.__name__, details))
         
     def save(self, _event=None):
         """Saves the file to the same path and filename, if untitled - calls save as."""
@@ -218,10 +216,6 @@ class EditorFrame(Frame):
 
     def page_down(self, _event=None):
         self.wtree.yview_scroll(1, "units")
-    
-    def train_now(self, _event=None):
-        """Opens the Trainer to train the vocabulary."""
-        pass
 
     def set_saved(self, state):
         """Set saved attribute to state."""
