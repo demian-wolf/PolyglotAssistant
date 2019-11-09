@@ -14,7 +14,7 @@ from EditorFrame import EditorFrame
 from utils import yesno2bool, retrycancel2bool, help_, about, contact_me
 
 
-class Main(Tk):
+class ReadIt(Tk):
     def __init__(self, text_filename=None, vocabulary_filename=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -57,9 +57,9 @@ class Main(Tk):
         self.menubar.entryconfigure("Bookmarks", state="disabled")  # when the program is started, the "Bookmarks" menu is disabled (because text file is not opened)
         
         self.helpmenu = Menu(self.menubar, tearoff=False)  # create the "Help" menu and add the appropriate entries
-        self.helpmenu.add_command(label="LearnWords Help", command=help_, accelerator="F1")
+        self.helpmenu.add_command(label="PolyglotAssistant Help", command=help_, accelerator="F1")
         self.helpmenu.add_separator()
-        self.helpmenu.add_command(label="About LearnWords", command=about, accelerator="Ctrl+F1")
+        self.helpmenu.add_command(label="About PolyglotAssistant", command=about, accelerator="Ctrl+F1")
         self.helpmenu.add_command(label="Contact me", command=contact_me, accelerator="Ctrl+Shift+F1")
         self.menubar.add_cascade(menu=self.helpmenu, label="Help")  # attach it to the menubar
 
@@ -127,7 +127,7 @@ class Main(Tk):
         if text_filename:  # if the text was specified,
             self.open_text(text_filename=text_filename)  # open it
         if vocabulary_filename:  # if the vocabulary was specified,
-            self.vocabulary_editor.open_(lwp_filename=vocabulary_filename)  # open it
+            self.vocabulary_editor.open_(vocabulary_filename=vocabulary_filename)  # open it
         
     def open_text(self, _event=None, text_filename=None):
         """Opens a text.
@@ -237,7 +237,7 @@ class Main(Tk):
         :return: no value
         :rtype: none
         """
-        self.title("%s - %s - LearnWords ReadIt 1.0" % (self.text_filename if self.text_filename else "Untitled", self.vocabulary_editor.filename))  # format the title
+        self.title("%s - %s - PolyglotAssistant ReadIt 1.0" % (self.text_filename if self.text_filename else "Untitled", self.vocabulary_editor.filename))  # format the title
 
     def add_bookmark(self):
         """
@@ -342,7 +342,7 @@ class Main(Tk):
 def show_usage():
     """Shows the command-line usage, if called."""
     Tk().withdraw()
-    showerror("Error", "You are trying to run this program in an unusual way.\n\nUsage:\nReadIt.exe text.*\nReadIt.exe vocabulary.lwv\nReadIt.exe text.* vocabulary.lwv")  # show the command-line usage
+    showerror("Error", "You are trying to run this program in an unusual way.\n\nUsage:\nReadIt.exe text.*\nReadIt.exe vocabulary.pav\nReadIt.exe text.* vocabulary.pav")  # show the command-line usage
     os._exit(0)
 
 if __name__ == "__main__":
@@ -352,19 +352,19 @@ if __name__ == "__main__":
         vocabulary_filename = None  # by default there is no vocabulary opened
         if len(files) == 1:  # if only one file specified,
             ext = os.path.splitext(files[-1])[-1]  # get its extension
-            if ext == ".lwv":  # if it is ".lwv",
+            if ext == ".pav":  # if it is ".pav",
                 vocabulary_filename = files[-1]  # this is a vocabulary,
             else:  # otherwise,
                 text_filename = files[-1]  # this is a text file
         elif len(files) == 2:  # if two files specified,
             fexts = {os.path.splitext(fname)[-1]:fname for fname in files}  # get files' extensions
-            if ".lwv" in fexts and len(fexts) > 1:  # if ".lwv" is in extensions, and the second file has another extension
-                vocabulary_filename = fexts.pop(".lwv")  # the ".lwv"-ending filename belongs to a vocabulary,
+            if ".pav" in fexts and len(fexts) > 1:  # if ".pav" is in extensions, and the second file has another extension
+                vocabulary_filename = fexts.pop(".pav")  # the ".pav"-ending filename belongs to a vocabulary,
                 text_filename = list(fexts.values())[-1]  # the other one belongs to a text file
             else:  # if there is no vocabulary (i.e. two texts),
                 show_usage()  # show the command-line usage
         else:  # if more than two files specified,
             show_usage() # show the command-line usage
-        Main(text_filename, vocabulary_filename).mainloop()
+        ReadIt(text_filename, vocabulary_filename).mainloop()
     else:  # if no files passed in command line,
-        Main().mainloop()  # create the ReadIt window and start its mainloop.
+        ReadIt().mainloop()  # create the ReadIt window and start its mainloop.

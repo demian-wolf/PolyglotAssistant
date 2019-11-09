@@ -4,7 +4,8 @@
 # email: demianwolfssd@gmail.com
 
 from tkinter import *
-from tkinter.messagebox import showinfo
+from tkinter.messagebox import showinfo, showerror
+import os
 import sys
 
 from PIL import Image
@@ -15,9 +16,11 @@ from utils import help_, about, contact_me
 
 
 class Editor(Tk):
-    def __init__(self, *args, lwp_filename=None, **kwargs):
+    def __init__(self, *args, vocabulary_filename=None, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
+        self.tray_icon = None
+
         self.protocol("WM_DELETE_WINDOW", self.hide_to_tray)  # ask yes/no/cancel before exit
         
         # Configure rows and columns to let the widgets stretch
@@ -53,17 +56,14 @@ class Editor(Tk):
         self.menubar.add_cascade(menu=self.editmenu, label="Edit")
         # Create the "Help" menu and add the appropriate entries
         self.helpmenu = Menu(self.menubar, tearoff=False)
-        self.helpmenu.add_command(label="LearnWords Help", command=help_, accelerator="F1")
+        self.helpmenu.add_command(label="PolyglotAssistant Help", command=help_, accelerator="F1")
         self.helpmenu.add_separator()
-        self.helpmenu.add_command(label="About LearnWords", command=about, accelerator="Ctrl+F1")
+        self.helpmenu.add_command(label="About PolyglotAssistant", command=about, accelerator="Ctrl+F1")
         self.helpmenu.add_command(label="Contact me", command=contact_me, accelerator="Ctrl+Shift+F1")
         self.menubar.add_cascade(menu=self.helpmenu, label="Help")
 
         self.iconbitmap("icon_32x32.ico")  # show the left-top window icon
-        self.tray_icon = pystray.Icon("EditorTrayIcon", title="LearnWords Editor")  # create the tray icon
-        self.tray_icon.icon = Image.open("icon_32x32.ico")  # open the icon using PIL
-        self.tray_icon.menu = pystray.Menu(pystray.MenuItem("Розгорнути", lambda: self.tray_icon.stop(), default=True),
-                                           pystray.MenuItem("Вийти", lambda: self.tray_exit()))  # add the menu items
+
         # Bind the keybindings
         self.bind("<F1>", help_)
         self.bind("<Control-F1>", about)
@@ -74,25 +74,32 @@ class Editor(Tk):
             self.bind("<Control-%s>" % key[2], self.vocabulary_editor.save)
             self.bind("<Control-Shift-%s>" % key[2], self.vocabulary_editor.save_as)
             
-        if lwp_filename:  # if a file was specified in command-line,
-            self.vocabulary_editor.open_(lwp_filename=lwp_filename)  # open the vocabulary
-        
+        if vocabulary_filename:  # if a file was specified in command-line,
+            self.vocabulary_editor.open_(vocabulary_filename=vocabulary_filename)  # open the vocabulary
+
     def statistics(self):
-        if self.vocabulary_editor.wtree.get_children():
-            alphabet_dict = {}
-            for word_pair in self.vocabulary_editor.wtree.get_children():
-                first_letter = self.vocabulary_editor.wtree.item(word_pair)["values"][0][0].upper()
-                if first_letter in alphabet_dict:
-                    alphabet_dict[first_letter] += 1
-                else:
-                    alphabet_dict[first_letter] = 1
-            result_list = ["By first letters:"]
+        """
+        Opens the "Statistics" dialog.
+
+        :return: no value
+        :rtype: none
+        """
+        if self.vocabulary_editor.wtree.get_children():  # if anything in the vocabulary,
+            alphabet_dict = {}  # create the Python dict object to store the count of words, starting with every char
+            for word_pair in self.vocabulary_editor.wtree.get_children():  # process every words' pair
+                first_letter = self.vocabulary_editor.wtree.item(word_pair)["values"][0][0].upper()  # get the 1st char
+                if first_letter in alphabet_dict:  # if the first char is already in the alphabet dict,
+                    alphabet_dict[first_letter] += 1  # increase the words' pairs count for this char (letter) by 1
+                else:  # if the letter was found the first time (so it wasn't in the alphabet_dict before)
+                    alphabet_dict[first_letter] = 1  # set the first char count to 1
+            # create the results' list in a way it is shown in the dialog
+            result_list = ["By first letters:"]  # the start caption
             result_list.extend(["{} - {}".format(first_letter, count) for first_letter,
                                                                           count in sorted(alphabet_dict.items())])
-            result_list.append("\nTotally: {}".format(len(self.vocabulary_editor.wtree.get_children())))
-            showinfo("Statistics", ("\n".join(result_list)))
-        else:
-            showinfo("Statistics", "There are no words in the vocabulary. Add some at first.")
+            result_list.append("\nTotally: {}".format(len(self.vocabulary_editor.wtree.get_children())))  # totally
+            showinfo("Statistics", ("\n".join(result_list)))  # show the statistics dialogue
+        else:  # if the vocabulary is empty,
+            showinfo("Statistics", "There are no words in the vocabulary. Add some at first.")  # it is nothing to show
 
     def hide_to_tray(self):
         """
@@ -101,6 +108,10 @@ class Editor(Tk):
         :return: no value
         :rtype: none
         """
+        self.tray_icon = pystray.Icon("EditorTrayIcon", title="PolyglotAssistant Editor")  # create the tray icon
+        self.tray_icon.icon = Image.open("icon_32x32.ico")  # open the icon using PIL
+        self.tray_icon.menu = pystray.Menu(pystray.MenuItem("Розгорнути", lambda: self.tray_icon.stop(), default=True),
+                                           pystray.MenuItem("Вийти", lambda: self.tray_exit()))  # add the menu items
         self.withdraw()  # hide the window
         self.tray_icon.run()  # run the icon's main loop
         # icon mainloop
@@ -108,7 +119,8 @@ class Editor(Tk):
         self.focus_force()  # focus on it
         
     def tray_exit(self):
-        """Run exit command from tray.
+        """
+        Run exit command from tray.
 
         :return: no value
         :rtype: none
@@ -117,7 +129,8 @@ class Editor(Tk):
         self.after(0, self.exit_)  # exit from the application
         
     def exit_(self):
-        """Exits the application.
+        """
+        Exits the application.
 
         :return: no value
         :rtype: none
@@ -126,9 +139,32 @@ class Editor(Tk):
             self.destroy()  # close it
 
     def update_title(self):
-        """Updates the title of the app."""
-        self.title("%s%s - LearnWords 1.0 Editor" % (self.vocabulary_editor.unsaved_prefix,
+        """Updates the title of the app.
+
+        :return: no value
+        :rtype: none
+        """
+        self.title("%s%s - PolyglotAssistant 1.00 Editor" % (self.vocabulary_editor.unsaved_prefix,
                                                      self.vocabulary_editor.filename))   # formats the title
+def show_usage():
+    """
+    Shows usage of the command-line interface.
+
+    :return: no value
+    :rtype: none
+    """
+    Tk().withdraw()  # hide the window (otherwise, an empty window is shown)
+    showerror("Error", "You are trying to run this program in an unusual way."
+                           "\n\nUsage:\nEditor.exe vocabulary.pav")  # displays the error
+    os._exit()  # terminates the application process
+
 
 if __name__ == "__main__":
-    Editor(lwp_filename=sys.argv[-1] if len(sys.argv) > 1 else None).mainloop()
+    # Processes the sys.argv list (command-line arguments list)
+    if len(sys.argv) == 1:  # if no arguments specified,
+        Editor().mainloop()  # run the main window with a new file created
+    elif len(sys.argv) == 2:  # if a file was specified,
+        if os.path.splitext(sys.argv[-1])[-1] == ".pav":  # and if it has got ".pav" extension
+            Editor(vocabulary_filename=sys.argv[-1].replace("\\", "/")).mainloop()  # open the vocabulary
+    else:  # if there were multiple arguments specified,
+        show_usage()  # show usage

@@ -8,7 +8,7 @@ from Trainer import Trainer
 class StartDialog(Tk):
     def __init__(self):
         super().__init__()
-        self.title("LearnWords 1.0")
+        self.title("PolyglotAssistant 1.00")
         self.resizable(False, False)
         self.create_wgts()
 

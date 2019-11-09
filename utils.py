@@ -50,8 +50,8 @@ def about(_event=None):
     :rtype: none
     """
     
-    showinfo("About LearnWords",
-             "LearnWords 1.0 (C) Demian Wolf, 2019\nLearnWords is an easy way to learn words of foreign language - convenient learning plan editor and smart autotrainer.\nProgram licensed AS-IS\nThank you for using my program!")
+    showinfo("About PolyglotAssistant",
+             "PolyglotAssistant 1.0 (C) Demian Wolf, 2019\nLearnWords is an easy way to learn words of foreign language - convenient learning plan editor and smart autotrainer.\nProgram licensed AS-IS\nThank you for using my program!")
 
 
 def contact_me(_event=None):
@@ -67,7 +67,7 @@ def contact_me(_event=None):
     webbrowser.open("mailto:demianwolfssd@gmail.com")
 
 
-def validate_lwp_data(data):
+def validate_vocabulary_data(data):
     """
     Validates the vocabulary's data.
 

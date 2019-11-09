@@ -5,7 +5,7 @@ from tkinter.ttk import Treeview, Entry, Scrollbar
 
 import pickle
 
-from utils import yesno2bool, validate_lwp_data
+from utils import yesno2bool, validate_vocabulary_data
 
 
 class EditorFrame(Frame):
@@ -80,14 +80,14 @@ class EditorFrame(Frame):
             self.set_saved(True)  # set the "saved" state
             self.master.update_title()
 
-    def open_(self, _event=None, lwp_filename=None):
+    def open_(self, _event=None, vocabulary_filename=None):
         """Opens a vocabulary."""
         if self.can_be_closed():  # if the file can be closed,
             try:  # try to
-                if lwp_filename:
-                    lwp_file = open(lwp_filename, "rb")
+                if vocabulary_filename:
+                    vocabulary_file = open(vocabulary_filename, "rb")
                 else:
-                    lwp_file = askopenfile(mode="rb", filetypes=[("LearnWords Vocabulary", "*.lwv")])  # ask a LWV (LearnWords Vocabulary) file to open
+                    vocabulary_file = askopenfile(mode="rb", filetypes=[("PolyglotAssistant Vocabulary", "*.pav")])  # ask a PAV (PolyglotAssistant Vocabulary) file to open
             except FileNotFoundError as details:  # if submitted file disappeared suddenly
                 showerror("Error", "Couldn't open the file. Check file location.\n\nDetails: FileNotFoundError (%s)" % details)
             except PermissionError as details:  # if the access to the file denied
@@ -95,9 +95,9 @@ class EditorFrame(Frame):
             except Exception as details:  # if any other problem happened
                 showerror("Error", "During opening the file unexpected error occured\n\nDetails: %s (%s)" % (details.__class__.__name__, details))
             else:  # if all is OK,
-                if lwp_file:  # if anything was opened...
+                if vocabulary_file:  # if anything was opened...
                     try:  # try to
-                        lwp_data = pickle.load(lwp_file)  # read the vocabulary
+                        vocabulary_data = pickle.load(vocabulary_file)  # read the vocabulary
                     except pickle.UnpicklingError as details:  # if the file is damaged, or its format is unsupported
                         showerror("Error",
                                   "The file is corrupted or has an unsupported format!\n\nDetails: %s" % details)
@@ -106,16 +106,16 @@ class EditorFrame(Frame):
                                   "During opening the file unexpected error occured\n\nDetails: %s (%s)" % (details.__class__.__name__, details))
                     else:  # if the file is unpickleable,
                         try:
-                            validate_lwp_data(lwp_data)  # check its format
+                            validate_vocabulary_data(vocabulary_data)  # check its format
                         except AssertionError:  # if it is invalid,
                             showerror("Error",
                                       "The file is corrupted or has an unsupported format!\n\nDetails: invalid object is pickled.")
                         else:
                             self.wtree.delete(*self.wtree.get_children())  # clear the words-list,
-                            for pair in lwp_data:  # and insert the words from opened vocabulary there
+                            for pair in vocabulary_data:  # and insert the words from opened vocabulary there
                                 self.wtree.insert("", END, values=pair)
                             self.set_saved(True)  # set state to saved
-                            self.filename = lwp_file.name  # update the filename value
+                            self.filename = vocabulary_file.name  # update the filename value
                             self.master.update_title()  # update the title of the main window
 
     def _save(self, filename):
@@ -141,7 +141,7 @@ class EditorFrame(Frame):
             
     def save_as(self, _event=None):
         try:  # try to
-            outfilename = asksaveasfilename(defaultextension=".", filetypes=[("LearnWords Plan", ".lwp")])  # ask a user for the filename to save to
+            outfilename = asksaveasfilename(defaultextension=".", filetypes=[("PolyglotAssistant Vocabulary", ".pav")])  # ask a user for the filename to save to
         except Exception as details:  # if an unexpected problem occured,
             showerror("Error", "An unexpected error occured.\n\nDetails: %s (%s)" % (details, details.__class__.__name__))
         else:  # if could get the filename,
