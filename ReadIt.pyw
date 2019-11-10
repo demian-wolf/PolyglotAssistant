@@ -139,7 +139,7 @@ class ReadIt(Tk):
         :return: no value
         :rtype: none
         """
-        if self.can_be_closed():
+        if self.can_be_closed():  # if the user confirms the text closing,
             try:  # try to
                 if text_filename:  # if a text file was specified in command line,
                     filename = text_filename  # set its filename as specified
@@ -173,14 +173,14 @@ class ReadIt(Tk):
         """
         origin = self.word_variable.get()  # get the origin word
         if origin:  # if something is entered,
-            try:
+            try:  # try to
                 src = self.src_cbox.get().lower()  # get the source language
                 if src != "auto":  # if it is not "auto",
                     src = self.LANGS_LIST[src]  # get the source language ISO 639-1 representation
                 dest = self.LANGS_LIST[self.dest_cbox.get().lower()]  # get the final language
                 result = googletrans.Translator().translate(origin, dest, src).text  # translate using the Google Translator API
                 self.translation_variable.set(result)  # update the translation variable
-            except Exception as details:
+            except Exception as details:  # if something went wrong,
                 showerror("Error", "Couldn't translate the word. Check your Internet connection.\n\nDetails: %s (%s)" % (details.__class__.__name__, details))
         else:  # if nothing was entered,
             self.translation_variable.set("")  # clear the translation variable
@@ -196,7 +196,7 @@ class ReadIt(Tk):
         self.src_cbox.set(dest)  # set the source language combobox value to final language,
         self.dest_cbox.set(src)  # set the final language combobox value to source language,
         self.word_variable.set(self.translation_variable.get())  # set the word_variable to translation (translation will be done again)
-        self.translate_word()
+        self.translate_word()  # translates the word from the word_variable using Google Translator API
 
     def update_replace_btn(self, _event=None):
         """Updates the replace button state.
@@ -314,14 +314,14 @@ class ReadIt(Tk):
             while retrycancel2bool(show_msg("Error",
                            "During adding a new bookmark an error occured. "
                            "Would you like to retry?\n\nDetails: %s (%s)"
-                           % (details.__class__.__name__, details), icon="error", type="retrycancel")):
-                try:
-                    with open("bookmarks.dat", "wb") as file:
-                        pickle.dump(self.bookmarks_data, file)
-                except Exception as new_details:
-                    details = new_details
-                else:
-                    break
+                           % (details.__class__.__name__, details), icon="error", type="retrycancel")):  # while user allows to retry,
+                try:  # try to
+                    with open("bookmarks.dat", "wb") as file:  # open the bookmarks.dat file,
+                        pickle.dump(self.bookmarks_data, file)  # dump the updated bookmarks list there
+                except Exception as new_details:  # if something went wrong agin,
+                    details = new_details  # update the error details
+                else:  # if all is OK,
+                    break  # there is no reason to retry again
                 
     def can_be_closed(self):
         """Asks the user to add bookmarks before closing the text file (when exits program, or opens a file)"""
@@ -341,11 +341,12 @@ class ReadIt(Tk):
 
 def show_usage():
     """Shows the command-line usage, if called."""
-    Tk().withdraw()
+    Tk().withdraw()  # create and hide a Tk() window (to avoid the blank window appearance on the screen)
     showerror("Error", "You are trying to run this program in an unusual way.\n\nUsage:\nReadIt.exe text.*\nReadIt.exe vocabulary.pav\nReadIt.exe text.* vocabulary.pav")  # show the command-line usage
-    os._exit(0)
+    os._exit(0)  # terminate the application process
 
 if __name__ == "__main__":
+    # Parses the sys.argv (command-line arguments)
     files = list(map(lambda s: s.replace("\\", "/"), sys.argv[1:]))  # get the command-line arguments (probably files)
     if len(files) > 0:  # if any files specified,
         text_filename = None  # by default there is no text opened
@@ -365,6 +366,6 @@ if __name__ == "__main__":
                 show_usage()  # show the command-line usage
         else:  # if more than two files specified,
             show_usage() # show the command-line usage
-        ReadIt(text_filename, vocabulary_filename).mainloop()
+        ReadIt(text_filename, vocabulary_filename).mainloop()  # open the specified files
     else:  # if no files passed in command line,
         ReadIt().mainloop()  # create the ReadIt window and start its mainloop.

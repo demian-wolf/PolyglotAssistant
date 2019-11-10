@@ -19,7 +19,7 @@ class Editor(Tk):
     def __init__(self, *args, vocabulary_filename=None, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.tray_icon = None
+        self.tray_icon = None  # create the tray_icon attribute (will be changed when the application is hidden to tray)
 
         self.protocol("WM_DELETE_WINDOW", self.hide_to_tray)  # ask yes/no/cancel before exit
         
