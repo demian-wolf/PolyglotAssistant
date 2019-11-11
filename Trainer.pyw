@@ -21,8 +21,17 @@ from utils import yesno2bool, retrycancel2bool, validate_users_dict, validate_vo
 
 
 class Trainer(Tk):
+    """
+    The Trainer main class.
+
+    :param vocabulary_filename: the vocabulary filename from the command line (optional)
+    :type vocabulary_filename: str or none
+    :return: no value
+    :rtype: none
+    """
     def __init__(self, vocabulary_filename=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
         self.iconbitmap("icon_32x32.ico")  # show the left-top window icon
         self.withdraw()  # hide this empty window (there are Toplevels to display something)
         ul_window = UserLoginWindow()  # create a toplevel for user logging
@@ -32,8 +41,15 @@ class Trainer(Tk):
 
 
 class UserLoginWindow(Toplevel):
-    def __init__(self):
-        super().__init__()
+    """
+    The main class for the user login window (user (player) selection)
+
+    :return: no value
+    :rtype: none
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
         self.title("Login - PolyglotAssistant 1.00 Trainer")  # set title "Login" to the frame
         self.protocol("WM_DELETE_WINDOW", self.close)  # when the user closes the window, terminate the whole process
         self.resizable(False, False)  # make the user login window unresizable
@@ -70,10 +86,23 @@ class UserLoginWindow(Toplevel):
         self.wait_variable(self.user)  # wait (don't return anything) while the user won't log in
 
     def login_double_click(self, event):
+        """
+        This method is called on double click on the users' listbox (when the user tries to log in by double click)
+
+        :param _event: the unused Tkinter event
+        :type _event: tkinter.Event
+        :return: no value
+        :rtype: none
+        """
         if event.y <= 17 * self.userslistbox.size():  # if the mouse y on the users' list belongs to any username
             self.login_as_this_user()  # login as the selected user
 
     def login_as_this_user(self, _event=None):
+        """
+        Logs as the selected user.
+        :param _event: the unused Tkinter event
+        :return: tkinter.Event
+        """
         selection = self.userslistbox.curselection()  # get user's selection
         if selection:  # if any user is selected,
             selected_user = self.userslistbox.get(selection[0])  # get the first (the single one) element from selection
@@ -86,6 +115,12 @@ class UserLoginWindow(Toplevel):
             showinfo("Information", "Choose a user at first. If there is no users in the list, add a new one.")
 
     def add_a_new_user(self):
+        """
+        Opens the dialog for adding users.
+
+        :return: no value
+        :rtype: none
+        """
         udata = AddUser().data  # get the user's data - (name, password) if wasn't canceled, None otherwise
         ulist = None  # users list should be None (it will be changed later, if no error during opening "users.dat")
         if udata:  # if the new user's adding was not canceled,
@@ -132,6 +167,12 @@ class UserLoginWindow(Toplevel):
         self.update_ulist()  # update the users' list
 
     def remove_this_user(self):
+        """
+        Removes the user after the user's confirm and if the password is right
+
+        :return: no value
+        :rtype: none
+        """
         if self.userslistbox.curselection():  # if any user is selected,
             selected_user = self.userslistbox.get(self.userslistbox.curselection()[0])  # get selected user's name
             # if deletion was confirmed,
@@ -153,6 +194,12 @@ class UserLoginWindow(Toplevel):
             showinfo("Information", "Choose what to remove at first.")  # if none is selected, show a message
 
     def update_ulist(self):
+        """
+        Updates the users' listbox (after the users adding/removal)
+
+        :return: no value
+        :rtype: none
+        """
         self.userslistbox.delete(0, END)  # clear all the users' list at first
         if "users.dat" in os.listdir(os.path.curdir):  # if there is the "users.dat" file in the app path,
             try:  # try to:
@@ -194,13 +241,23 @@ class UserLoginWindow(Toplevel):
         self.userslistbox.activate(0)  # activate the first item of the user's listbox
 
     def close(self):
+        """
+        Closes the users login window.
+
+        :return: no value
+        :rtype: none
+        """
         self.destroy()  # destroy the window
         os._exit(0)  # terminate the process
 
 
 class AddUser(Toplevel):
+    """
+    Class for the Toplevel window that is used to add a new user.
+    """
     def __init__(self):
         super().__init__()
+
         self.resizable(False, False)  # make this dialog unresizable
         # TODO: why doesn't it work?
         # self.transient(self.master)  # make it transient from its master (self.master)
@@ -224,6 +281,12 @@ class AddUser(Toplevel):
         self.wait_window()  # doesn't return anything while the window is not destroyed
 
     def ok(self, _event=None):
+        """
+        Submits the new user when "OK" button is pressed.
+
+        :param _event: the unused Tkinter event
+        :return: no value
+        """
         if not self.username_entry.get():  # if the user skipped username entry, give him a warning
             showwarning("Warning", "Cannot create a user without username! Enter a username, please!")
             return  # stop this function
@@ -240,6 +303,16 @@ class AddUser(Toplevel):
 
 
 class HomeWindow(Toplevel):
+    """
+    The "Home" window class. This one is used to view the vocabulary contents and selecting how many words per game will be asked.
+
+    :param users_dict: the dict with the users (their names, passwords and stats)
+    :param user: the username
+    :param vocabulary_filename: the vocabulary filename (if passed to Trainer class before)
+    :type users_dict: dict
+    :type user: str
+    :type vocabulary_filename: str
+    """
     def __init__(self, users_dict, user, vocabulary_filename, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -327,12 +400,22 @@ class HomeWindow(Toplevel):
             self.open_vocabulary(vocabulary_filename=self.vocabulary_filename)  # throw this arg to the open_vocabulary
 
     def open_vocabulary(self, _event=None, vocabulary_filename=None):
+        """
+        Opens a vocabulary from file.
+
+        :param _event: the unused Tkinter event
+        :param vocabulary_filename: the vocabulary filename (e.g. from command-line)
+        :type _event: tkinter.Event
+        :type vocabulary_filename: str or none
+        :return: no value
+        :rtype: none
+        """
         try:  # try to
             # Get the filename
-            if vocabulary_filename:
-                filename = vocabulary_filename
-            else:
-                filename = askopenfilename(filetypes=[("PolyglotAssitant Vocabulary", ".pav")])
+            if vocabulary_filename:  # if the vocabulary filename was passed (e.g from command-line),
+                filename = vocabulary_filename  # set the filename to this,
+            else:  # if the vocabulary filename was not passed,
+                filename = askopenfilename(filetypes=[("PolyglotAssitant Vocabulary", ".pav")])  # use the "Open" dialog
         except Exception as details:  # if something went wrong, show an error message
             showerror("Error", "Unable to open this file as a vocabulary\n\nDetails: %s (%s)" % (details.__class__.__name__, details))
         else:  # if could get filename,
@@ -367,6 +450,12 @@ class HomeWindow(Toplevel):
         self.after(0, self.focus_force)  # set the focus on the window
 
     def get_words_list(self):
+        """
+        Get the words' list and fill the Treeview with its data.
+
+        :return: no value
+        :rtype: none
+        """
         # clear all the words' lists (good, bad and unknown),
         self.good.clear()
         self.bad.clear()
@@ -390,13 +479,19 @@ class HomeWindow(Toplevel):
                 for pair in self.vocabulary_data:  # add every pair
                     self.wtree.insert("", END, values=pair, tag="unknown")  # to the pairs' list with "unknown" tag,
                     self.unknown.append(pair)  # and append to the list for unknown words' pairs
-            # set appropriate colors to every word's pair        
+            # set the appropriate colors to every word's pair
             self.wtree.tag_configure("good", background="#1E90FF")
             self.wtree.tag_configure("bad", background="#FF5050")
             self.wtree.tag_configure("unknown", background="#9966FF")
             self.update_stats()  # and update the stats (labels' text values)
 
     def update_stats(self):
+        """
+        Update the statistics (at the bottom of the window).
+
+        :return: no value
+        :rtype: none
+        """
         # if anything is opened, get the values from there, otherwise use queestion marks instead
         good, bad, unknown, total = (len(self.good), len(self.bad), len(self.unknown),
                                        len(self.wtree.get_children())) if self.vocabulary_filename else ("?", "?", "?", "?")
@@ -406,6 +501,16 @@ class HomeWindow(Toplevel):
         self.total_label["text"] = "Total: %s" % total
 
     def validate_wpg(self, P):
+        """
+        Validates the words per game entry.
+
+        Its value must be an empty string, or a string integer in the allowed range
+
+        :param P: the WPG value
+        :type P: str
+        :return: `True` for a valid WPG value, `False` - for an invalid one.
+        :rtype: bool
+        """
         if P.isdigit():  # if the value is a number,
             if int(P) in range(1, self.wpg_spb["to"] + 1):  # and if P is in the allowed range,
                 return True  # this is a valid value
@@ -416,10 +521,24 @@ class HomeWindow(Toplevel):
         return False  # it is incorrect
 
     def back(self):
+        """
+        Return to the users login window.
+
+        :return: no value
+        :rtype: none
+        """
         self.destroy()  # destroy the Home window
         Trainer(self.vocabulary_filename)  # reopen the Trainer with the same vocabulary values
 
     def start(self, _event=None):
+        """
+        Starts a Gym session if the vocabulary is opened.
+
+        :param _event: the unused Tkinter event
+        :type _event: tkinter.Event
+        :return: no value
+        :rtype: none
+        """
         if self.vocabulary_filename:  # if any vocabulary is opened,
             self.withdraw()  # close the Home window,
             gym = GymWindow(self.good, self.bad, self.unknown, self.wpg_var.get())  # and create a Gym window
@@ -444,7 +563,7 @@ class HomeWindow(Toplevel):
                                                 "During saving the users.dat file an unexpected error occured. Statistics were not saved. "
                                                 "Do you want to retry?\n\nDetails: %s (%s)"
                                                 % (details.__class__.__name__, details), icon="error",
-                                                type="retrycancel")):
+                                                type="retrycancel")):  # while the user asks to retry,
                     try:  # try to
                         with open("users.dat", "wb") as udat:  # open it again,
                             pickle.dump(self.users_dict, udat)  # and dump the new stats there
@@ -462,6 +581,18 @@ class HomeWindow(Toplevel):
 
 
 class GymWindow(Toplevel):
+    """
+    The class for the Gym window. Here you can learn new words.
+
+    :param good: the list of the good words
+    :param bad: the list of the bad words
+    :param unknown: the list of the untried words
+    :param wpg: how many words should be asked per game
+    :type good: list[tuples]
+    :type bad: list[tuples]
+    :type unknown: list[tuples]
+    :type wpg: int
+    """
     def __init__(self, good, bad, unknown, wpg, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -505,8 +636,14 @@ class GymWindow(Toplevel):
         self.wait_window()  # wait until the Gym will be closed
 
     def pass_a_word(self):
+        """
+        Pass a new word to the user.
+
+        :return: no value
+        :rtype: none
+        """
         if self.queue:  # if there is something in the queue
-            self.enable_controls()
+            self.enable_controls()  # enable the controls
             self.translation_entry.delete(0, END)  # clear it
             self.pair = self.queue.pop(0)  # get the pair from the queue
             self.word_label["text"] = self.pair[0]  # show the pair source
@@ -520,9 +657,23 @@ class GymWindow(Toplevel):
             self.after(3000, self.back)  # close the Gym
 
     def back(self):
+        """
+        Return back to the "Home" window.
+
+        :return: no value
+        :rtype: none
+        """
         self.destroy()  # destroys the Gym window
 
     def ok(self, _event=None):
+        """
+        Submits the right words and plays the "right" sound for them, otherwise only plays the sound for the "wrong" one
+
+        :param _event: the unused Tkinter event
+        :type _event: tkinter.Event
+        :return: no value
+        :rtype: none
+        """
         if self.is_right_answer():  # if the right answer entered
             winsound.PlaySound("sound/shot.wav", winsound.SND_ASYNC)  # play the shoot sound
             self.score += 1  # increase the score value by 1
@@ -538,6 +689,14 @@ class GymWindow(Toplevel):
             winsound.PlaySound("sound/wrong.wav", winsound.SND_ASYNC)  # play the wrong sound
 
     def _skip(self, action):
+        """
+        The function that called for the bad-known words (timeout and skip)
+
+        :param action: can be `"Timeout"` or `"Skip?"`for timeout and skip
+        :type action: str
+        :return: no value
+        :rtype: none
+        """
         if self.is_right_answer() and action == "Timeout!":  # if the answer is right, and the skip is caused by timeout
             self.ok()  # submit the word
         else:  # if the answer is wrong,
@@ -562,41 +721,90 @@ class GymWindow(Toplevel):
             self.after(3000, self.pass_a_word)  # wait for 3 seconds, and then pass a new word to user
 
     def skip(self, _event=None):
+        """
+        Skip the word (Esc key press or "Skip" button click)
+
+        :param _event: the unused Tkinter event
+        :type _event: tkinter.Event
+        :return: no value
+        :rtype: none
+        """
         self.after_cancel(self.tg_after)  # cancel the timer after event
         self._skip("Skip?")  # and skip the pair as a skip
 
     def timeout(self):
+        """
+        Timeout for the word (30 seconds)
+
+        :return: no value
+        :rtype: none
+        """
         self._skip("Timeout!")  # skip the pair as a timeout
 
     def enable_controls(self):
+        """
+        Enable the controls ("OK", "Skip" buttons, their hotkey bindings and the translation entry)
+
+        :return: no value
+        :rtype: none
+        """
+        # Unbind the hotkeys bindings
         self.translation_entry.bind("<Return>", self.ok)  # on "Return" press the word will be accepted (if it is right)
         self.translation_entry.bind("<Escape>", self.skip)  # if the user press "Esc", the word will be skipped
+        # Disable the GUI objects
         self.ok_button["state"] = "normal"  # enable the "OK" button
         self.skip_button["state"] = "normal"  # enable the "Skip" button
         self.translation_entry["state"] = "normal"  # enable the enter for entering translation
 
     def disable_controls(self):
-        # Disable the "Return" and "Escape" keys' bindings
+        """
+        Disable the controls ("OK", "Skip" buttons, their hotkey bindings and the translation entry)
+
+        :return: no value
+        :rtype: none
+        """
+        # Unbind the hotkeys bindings
         self.translation_entry.unbind("<Return>")
         self.translation_entry.unbind("<Escape>")
+        # Disable the GUI objects
         self.ok_button["state"] = "disabled"  # disable the "OK" button
         self.skip_button["state"] = "disabled"  # disable the "Skip" button
         self.translation_entry["state"] = "disabled"  # disable the enter for entering translation
 
     def is_right_answer(self):
+        """
+        Checks is the answer is right. Returns `True` if yes, otherwise `False`
+
+        :return: `True` or `False` depending on the answer quality
+        :rtype: bool
+        """
         return True if self.translation_entry.get().replace("ё", "е").replace("Ё", "Е") == self.pair[1].\
             replace("ё", "е").replace("Ё", "Е") else False
 
     def update_score_label(self):
+        """
+        Updates the score label.
+
+        :return: no value
+        :rtype: none
+        """
+
         self.score_label["text"] = "%s/%s" % (self.score, self.totally)  # format the score label
 
 def show_usage():
-    Tk().withdraw()  # create and hide the window to avoid the the blank window on the screen
+    """
+    Shows the usage of the command-line interface.
+
+    :return: no value
+    :rtype: none
+    """
+    Tk().withdraw()  # create and hide the window to avoid the appearance of the blank window on the screen
     showerror("Error", "You are trying to run this program in an unusual way."
                        "\n\nUsage:\nTrainer.exe vocabulary.pav")
     os._exit(0)  # terminate the process
 
 if __name__ == "__main__":
+    # Check the command-line arguments
     if len(sys.argv) == 1:  # if no command-line arguments specified,
         Trainer().mainloop()   # create a Trainer's window
     elif len(sys.argv) == 2:  # if a file is specified as a command-line argument,
@@ -605,7 +813,4 @@ if __name__ == "__main__":
         else:  # if the file's extension doesn't looks like a valid PolyglotAssistant Vocabulary file extension
             show_usage()  # show usage
     else:  # if there are multiple args,
-        show_usage()  # show usage
-
-# TODO: docstrings
-# TODO: insert os._exit(0) where it is necessary
+        show_usage()  # show the command-line interface usage

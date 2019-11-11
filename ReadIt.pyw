@@ -15,6 +15,16 @@ from utils import yesno2bool, retrycancel2bool, help_, about, contact_me
 
 
 class ReadIt(Tk):
+    """
+    The ReadIt main class.
+
+    :param text_filename: the text filename from the command line (optional)
+    :param vocabulary_filename: the vocabulary filename from the command line (optional)
+    :type text_filename: str
+    :type vocabulary_filename: str or none
+    :return: no value
+    :rtype: none
+    """
     def __init__(self, text_filename=None, vocabulary_filename=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -39,7 +49,7 @@ class ReadIt(Tk):
         self.filemenu.add_command(label="Open a text", command=self.open_text, accelerator="Ctrl+O")
         self.filemenu.add_separator()
         self.filemenu.add_command(label="New vocabulary", command=self.vocabulary_editor.new, accelerator="Ctrl+Alt+N")
-        self.filemenu.add_command(label="Open a vocabulary", command=self.vocabulary_editor.open_, accelerator="Ctrl+Alt+O")
+        self.filemenu.add_command(label="Open a vocabulary", command=self.vocabulary_editor.open, accelerator="Ctrl+Alt+O")
         self.filemenu.add_command(label="Save a vocabulary", command=self.vocabulary_editor.save, accelerator="Ctrl+Alt+S")
         self.filemenu.add_command(label="Save as a vocabulary", command=self.vocabulary_editor.save_as, accelerator = "Ctrl+Alt+Shift+S")
         self.filemenu.add_separator()
@@ -107,7 +117,7 @@ class ReadIt(Tk):
         for key in ("ONS", "ons"):  # process every key-char
             self.bind("<Control-%s>" % key[0], self.open_text)
             self.bind("<Control-Alt-%s>" % key[1], self.vocabulary_editor.new)
-            self.bind("<Control-Alt-%s>" % key[0], self.vocabulary_editor.open_)
+            self.bind("<Control-Alt-%s>" % key[0], self.vocabulary_editor.open)
             self.bind("<Control-Alt-%s>" % key[2], self.vocabulary_editor.save)
             self.bind("<Control-Alt-Shift-%s>" % key[2], self.vocabulary_editor.save_as)
         
@@ -127,7 +137,7 @@ class ReadIt(Tk):
         if text_filename:  # if the text was specified,
             self.open_text(text_filename=text_filename)  # open it
         if vocabulary_filename:  # if the vocabulary was specified,
-            self.vocabulary_editor.open_(vocabulary_filename=vocabulary_filename)  # open it
+            self.vocabulary_editor.open(vocabulary_filename=vocabulary_filename)  # open it
         
     def open_text(self, _event=None, text_filename=None):
         """Opens a text.
@@ -275,23 +285,43 @@ class ReadIt(Tk):
         self.textbox.yview_moveto(bookmark)  # set the textbox y position to the selected bookmark record
         
     def clear_all_bookmarks(self):
-        """Clears the bookmarks' list after user's confirmation."""
+        """
+        Clears the bookmarks' list after user's confirmation.
+
+        :return: no value
+        :rtype: none
+        """
         if yesno2bool(show_msg("Warning", "Do you really want to clear all the bookmarks list for this file?", "warning", "yesno")): # if the user confirms the clearing
             del self.bookmarks_data[self.text_filename]  # remove all the bookmarks for the current filename
         self.update_bookmarks_menu()  # update bookmarks' menu entries
 
     def disable_bookmarks_lst(self):
-        """Disables the bookmarks' menu submenus "Remove >" and "Go to >" when there aren't any bookmarks attached to opened file."""
+        """
+        Disables the bookmarks' menu submenus "Remove >" and "Go to >" when there aren't any bookmarks attached to opened file.
+
+        :return: no value
+        :rtype: none
+        """
         self.bookmarksmenu.entryconfigure("Remove", state="disabled")  # disable "Remove >" submenu
         self.bookmarksmenu.entryconfigure("Go to", state="disabled")  # disable "Go to >" submenu
 
     def enable_bookmarks_lst(self):
-        """Enables the bookmarks' menu submenus "Remove >" and "Go to >" when there are some bookmarks attached to opened file."""
+        """
+        Enables the bookmarks' menu submenus "Remove >" and "Go to >" when there are some bookmarks attached to opened file.
+
+        :return: no value
+        :rtype: none
+        """
         self.bookmarksmenu.entryconfigure("Remove", state="normal")  # enable "Remove >" submenu
         self.bookmarksmenu.entryconfigure("Go to", state="normal")  # enbale "Go to >" submenu
     
     def update_bookmarks_menu(self):
-        """Updates bookmarks' menu entries after changing bookmarks' list content."""
+        """
+        Updates bookmarks' menu entries after changing bookmarks' list content.
+
+        :return: no value
+        :rtype: none
+        """
         if self.text_filename in self.bookmarks_data:  # if filename is in the bookmarks' list
             if self.bookmarks_data[self.text_filename]:  # if any bookmarks for this file are created
                 self.enable_bookmarks_lst()  # enable bookmarks "Remove >" and "Go to >" submenus
@@ -306,7 +336,12 @@ class ReadIt(Tk):
             self.disable_bookmarks_lst()  # disable the "Remove >" and "Go to >" submenus
     
     def update_bookmarks_file(self):
-        """Updates the "bookmarks.dat" file contents after changing bookmarks' list content"""
+        """
+        Updates the "bookmarks.dat" file contents after changing bookmarks' list content.
+
+        :return: no value
+        :rtype: none
+        """
         try:  # try to
             with open("bookmarks.dat", "wb") as file:  # open bookmarks.dat for writing
                 pickle.dump(self.bookmarks_data, file)  # update it with new bookmarks
@@ -324,7 +359,12 @@ class ReadIt(Tk):
                     break  # there is no reason to retry again
                 
     def can_be_closed(self):
-        """Asks the user to add bookmarks before closing the text file (when exits program, or opens a file)"""
+        """
+        Asks the user to add bookmarks before closing the text file (when exits program, or opens a file)
+
+        :return: no value
+        :rtype: none
+        """
         if self.text_opened and self.bookmarks_data != None:  # if both text was opened and bookmarks were not disabled due to an error
             result = askyesnocancel("Add bookmark?", "Do you want to add a bookmark before exit?")  # ask user about adding a bookmarks before exit
             if result:  # if he clicks "Yes",
@@ -335,12 +375,22 @@ class ReadIt(Tk):
         return True  # if "Yes" and bookmark were added or "No"
     
     def exit(self):
-        """Asks to save a bookmark and the vocabulary, and exits then."""
+        """
+        Asks to save a bookmark and the vocabulary, and exits then.
+
+        :return: no value
+        :rtype: none
+        """
         if self.can_be_closed() and self.vocabulary_editor.can_be_closed():  # if both bookmarks added and vocabulary saved,
             self.destroy()  # destroy the ReadIt window
 
 def show_usage():
-    """Shows the command-line usage, if called."""
+    """
+    Shows the command-line usage, if called.
+
+    :return: no value
+    :rtype: none
+    """
     Tk().withdraw()  # create and hide a Tk() window (to avoid the blank window appearance on the screen)
     showerror("Error", "You are trying to run this program in an unusual way.\n\nUsage:\nReadIt.exe text.*\nReadIt.exe vocabulary.pav\nReadIt.exe text.* vocabulary.pav")  # show the command-line usage
     os._exit(0)  # terminate the application process

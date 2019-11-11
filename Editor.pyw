@@ -16,6 +16,14 @@ from utils import help_, about, contact_me
 
 
 class Editor(Tk):
+    """
+    The Editor's main class.
+
+    :param vocabulary_filename: the vocabulary filename from the command line (optional)
+    :type vocabulary_filename: str
+    :return: no value
+    :rtype: none
+    """
     def __init__(self, *args, vocabulary_filename=None, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -39,7 +47,7 @@ class Editor(Tk):
         # Create the "File" menu and add the appropriate entries
         self.filemenu = Menu(self.menubar, tearoff=False)
         self.filemenu.add_command(label="New", command=self.vocabulary_editor.new, accelerator="Ctrl+N")
-        self.filemenu.add_command(label="Open", command=self.vocabulary_editor.open_, accelerator="Ctrl+O")
+        self.filemenu.add_command(label="Open", command=self.vocabulary_editor.open, accelerator="Ctrl+O")
         self.filemenu.add_command(label="Save", command=self.vocabulary_editor.save, accelerator="Ctrl+S")
         self.filemenu.add_command(label="Save As", command=self.vocabulary_editor.save_as, accelerator="Ctrl+Shift+S")
         self.filemenu.add_command(label="Statistics", command=self.statistics)
@@ -51,7 +59,7 @@ class Editor(Tk):
         self.editmenu = Menu(self.menubar, tearoff=False)
         self.editmenu.add_command(label="Add", command=self.vocabulary_editor.add, accelerator="Ctrl+Alt+A")
         self.editmenu.add_command(label="Edit", command=self.vocabulary_editor.edit, accelerator="Ctrl+Alt+E")
-        self.editmenu.add_command(label="Remove", command=self.vocabulary_editor.remove, accelerator="Del")
+        self.editmenu.add_command(label="Remove", command=self.vocabulary_editor.remove, accelerator="Alt+Del")
         self.editmenu.add_command(label="Clear", command=self.vocabulary_editor.clear, accelerator="Shift+Del")
         self.menubar.add_cascade(menu=self.editmenu, label="Edit")
         # Create the "Help" menu and add the appropriate entries
@@ -70,12 +78,12 @@ class Editor(Tk):
         self.bind("<Control-Shift-F1>", contact_me)
         for key in ("NOS", "nos"):  # process every key
             self.bind("<Control-%s>" % key[0], self.vocabulary_editor.new)
-            self.bind("<Control-%s>" % key[1], self.vocabulary_editor.open_)
+            self.bind("<Control-%s>" % key[1], self.vocabulary_editor.open)
             self.bind("<Control-%s>" % key[2], self.vocabulary_editor.save)
             self.bind("<Control-Shift-%s>" % key[2], self.vocabulary_editor.save_as)
             
         if vocabulary_filename:  # if a file was specified in command-line,
-            self.vocabulary_editor.open_(vocabulary_filename=vocabulary_filename)  # open the vocabulary
+            self.vocabulary_editor.open(vocabulary_filename=vocabulary_filename)  # open the vocabulary
 
     def statistics(self):
         """
@@ -137,9 +145,11 @@ class Editor(Tk):
         """
         if self.vocabulary_editor.can_be_closed():  # ask user to save the vocabulary; if can close the window then,
             self.destroy()  # close it
+            os._exit(0)  # terminate the application process
 
     def update_title(self):
-        """Updates the title of the app.
+        """
+        Updates the title of the app.
 
         :return: no value
         :rtype: none
@@ -148,7 +158,7 @@ class Editor(Tk):
                                                      self.vocabulary_editor.filename))   # formats the title
 def show_usage():
     """
-    Shows usage of the command-line interface.
+    Shows the usage of the command-line interface.
 
     :return: no value
     :rtype: none
