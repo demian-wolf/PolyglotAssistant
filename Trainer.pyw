@@ -5,6 +5,7 @@ from tkinter import *
 from tkinter.messagebox import showinfo, showerror, showwarning, _show as show_msg
 from tkinter.filedialog import askopenfilename
 from tkinter.ttk import Treeview, Entry, Progressbar, Scrollbar
+
 try:
     # if Python >= 3.7:
     from tkinter.ttk import Spinbox
@@ -17,7 +18,8 @@ import pickle
 import os
 import sys
 
-from utils import yesno2bool, retrycancel2bool, validate_users_dict, validate_vocabulary_data, reverse_pairs, help_, about, contact_me, tidy_stats
+from utils import yesno2bool, retrycancel2bool, validate_users_dict, validate_vocabulary_data, reverse_pairs, help_, \
+    about, contact_me, tidy_stats
 
 
 class Trainer(Tk):
@@ -29,6 +31,7 @@ class Trainer(Tk):
     :return: no value
     :rtype: none
     """
+
     def __init__(self, vocabulary_filename=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -47,6 +50,7 @@ class UserLoginWindow(Toplevel):
     :return: no value
     :rtype: none
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -71,7 +75,8 @@ class UserLoginWindow(Toplevel):
         Label(pwd_frame, text="Password:").grid(row=0, column=0, sticky="ew")  # a label, which says "Password:"
         self.pwd_entry = Entry(pwd_frame, show="●")  # entry for the password
         self.pwd_entry.grid(row=0, column=1, sticky="ew")  # grid the password entry
-        self.pwd_entry.bind("<Return>", self.login_as_this_user)  # after password entering, user can press "Enter" to continue
+        self.pwd_entry.bind("<Return>",
+                            self.login_as_this_user)  # after password entering, user can press "Enter" to continue
         pwd_frame.grid(columnspan=5)  # grid password frame
 
         # Create the buttons
@@ -89,8 +94,8 @@ class UserLoginWindow(Toplevel):
         """
         This method is called on double click on the users' listbox (when the user tries to log in by double click)
 
-        :param _event: the unused Tkinter event
-        :type _event: tkinter.Event
+        :param event: the unused Tkinter event
+        :type event: tkinter.Event
         :return: no value
         :rtype: none
         """
@@ -128,13 +133,20 @@ class UserLoginWindow(Toplevel):
                 try:  # try to open the users list
                     udat = open("users.dat", "rb")  # users.dat will be opened
                 except FileNotFoundError as details:  # if the "users.dat" file had disappeared from the app directory,
-                    showerror("Error", "Couldn't open the users.dat file. Check its location. Application will exit now.\n\nDetails: FileNotFoundError (%s)" % details)
+                    showerror("Error",
+                              "Couldn't open the users.dat file. Check its location. "
+                              "Application will exit now.\n\nDetails: FileNotFoundError (%s)" % details)
                     self.close()  # terminate the program process
                 except PermissionError as details:  # if the access to the file denied
-                    showerror("Error", "Couldn't open the users.dat file. Check your permissions to read it. Application will exit now.\n\nDetails: PermissionError (%s)" % details)
+                    showerror("Error",
+                              "Couldn't open the users.dat file. Check your permissions to read it. "
+                              "Application will exit now.\n\nDetails: PermissionError (%s)" % details)
                     self.close()  # terminate the program process
                 except Exception as details:  # if any other problem happened
-                    showerror("Error", "During opening the users.dat file unexpected error occured. Application will exit now.\n\nDetails: %s (%s)" % (details.__class__.__name__, details))
+                    showerror("Error",
+                              "During opening the users.dat file unexpected error occured. "
+                              "Application will exit now.\n\nDetails: %s (%s)" % (
+                                  details.__class__.__name__, details))
                     self.close()  # terminate the program process
                 else:  # if could open the "users.dat" file,
                     try:  # try to
@@ -144,16 +156,19 @@ class UserLoginWindow(Toplevel):
                                   "The users.dat is corrupted or has an unsupported format!\n\nDetails: %s" % details)
                     except Exception as details:  # if unexpected error occured,
                         showerror("Error",
-                                  "During opening the users.dat unexpected error occured\n\nDetails: %s (%s)" % (details.__class__.__name__, details))
-            else:   # if there is no "users.dat" in the app path,
+                                  "During opening the users.dat unexpected error occured\n\nDetails: %s (%s)" % (
+                                      details.__class__.__name__, details))
+            else:  # if there is no "users.dat" in the app path,
                 ulist = {}  # create a new users' dictionary
             if ulist != None:  # if could open users' list,
-                ulist[udata[0]] = {"password": udata[1], "stats": {}}  # assign new user's name with his password and stats
+                ulist[udata[0]] = {"password": udata[1],
+                                   "stats": {}}  # assign new user's name with his password and stats
                 try:  # try to
                     pickle.dump(ulist, open("users.dat", "wb"))  # dump it all into new "users.dat" file
                 except Exception as details:  # if something went wrong,
                     while retrycancel2bool(show_msg("Error",
-                                                    "During saving the users.dat file an unexpected error occured. New user was not saved. "
+                                                    "During saving the users.dat file an unexpected error occured. "
+                                                    "New user was not saved. "
                                                     "Do you want to retry?\n\nDetails: %s (%s)"
                                                     % (details.__class__.__name__, details), icon="error",
                                                     type="retrycancel")):  # ask about retry while the error is going on
@@ -209,12 +224,13 @@ class UserLoginWindow(Toplevel):
                 self.close()  # terminate the process
             except (pickle.UnpicklingError, EOFError) as details:  # if the "users.dat" is damaged,
                 if yesno2bool(show_msg("Error", "The users.dat is damaged. "
-                                       "Do you want to remove it and add new users then?\n\nDetails: %s (%s)" %
-                                       (details.__class__.__name__, details), "error", "yesno")):
+                                                "Do you want to remove it and add new users then?\n\nDetails: %s (%s)" %
+                                                (details.__class__.__name__, details), "error", "yesno")):
                     try:  # try to
                         os.remove("users.dat")  # remove it (after asking the user)
                     except Exception as details:  # if couldn't remove "users.dat",
-                        showerror("Error", "Couldn't remove the damaged users.dat file.\n\nDetails: %s (%s)" % (details.__class__.__name__, details))
+                        showerror("Error", "Couldn't remove the damaged users.dat file.\n\nDetails: %s (%s)" % (
+                            details.__class__.__name__, details))
                     self.after(0, self.focus_force)  # set focus to the application window
                 else:  # if user canceled the removal,
                     self.close()  # terminate the application process
@@ -255,6 +271,7 @@ class AddUser(Toplevel):
     """
     Class for the Toplevel window that is used to add a new user.
     """
+
     def __init__(self):
         super().__init__()
 
@@ -304,7 +321,7 @@ class AddUser(Toplevel):
 
 class HomeWindow(Toplevel):
     """
-    The "Home" window class. This one is used to view the vocabulary contents and selecting how many words per game will be asked.
+    The "Home" window class. This one is used to view the vocabulary contents and configuring words/game attribute.
 
     :param users_dict: the dict with the users (their names, passwords and stats)
     :param user: the username
@@ -313,6 +330,7 @@ class HomeWindow(Toplevel):
     :type user: str
     :type vocabulary_filename: str
     """
+
     def __init__(self, users_dict, user, vocabulary_filename, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -354,7 +372,7 @@ class HomeWindow(Toplevel):
         self.rowconfigure(0, weight=1)
         for column_id in (1, 2, 3, 4, 7):
             self.columnconfigure(column_id, weight=1)
-        
+
         # Create and configure a Treeview widget for viewing the words pairs
         self.wtree = Treeview(self, show="headings", columns=["word", "translation"], selectmode=EXTENDED)
         self.wtree.heading("word", text="Word")  # create the "Word" column
@@ -392,7 +410,7 @@ class HomeWindow(Toplevel):
         self.bind("<Control-Shift-F1>", contact_me)
         for key in ("O", "o"):
             self.bind("<Control-%s>" % key, self.open_vocabulary)
-        
+
         self.update_stats()  # get stats for this user
         self.get_words_list()  # get words' list
 
@@ -417,33 +435,37 @@ class HomeWindow(Toplevel):
             else:  # if the vocabulary filename was not passed,
                 filename = askopenfilename(filetypes=[("PolyglotAssitant Vocabulary", ".pav")])  # use the "Open" dialog
         except Exception as details:  # if something went wrong, show an error message
-            showerror("Error", "Unable to open this file as a vocabulary\n\nDetails: %s (%s)" % (details.__class__.__name__, details))
+            showerror("Error", "Unable to open this file as a vocabulary\n\nDetails: %s (%s)" % (
+                details.__class__.__name__, details))
         else:  # if could get filename,
             if filename:  # if the user didn't clicked "Cancel" in the open-file dialog,
                 try:  # try to open this file
                     file = open(filename, "rb")  # open the file by its filename
                     self.vocabulary_data = pickle.load(file)  # and try to load the vocabulary from it
-                except pickle.UnpicklingError as details:
+                except pickle.UnpicklingError:
                     # if couldn't unpickle it, show an error message
                     showerror("Error", "Unable to open the vocabulary!\n\nDetails: invalid vocabulary file")
                 except Exception as details:  # if something another went wrong
-                    showerror("Error", "Unable to open this vocabulary!\n\nDetails: %s (%s)" % (details.__class__.__name__, details))
+                    showerror("Error", "Unable to open this vocabulary!\n\nDetails: %s (%s)" % (
+                        details.__class__.__name__, details))
                 else:  # otherwise,
                     try:
                         # validate the unpickled vocabulary data
                         validate_vocabulary_data(self.vocabulary_data)
                     except AssertionError:  # if this vocabulary data is invalid, show an error message
                         showerror("Error",
-                                  "Unable to open the file!\n\nDetails: it doesn't looks like a valid learning plan file!")
+                                  "Unable to open the file!"
+                                  "\n\nDetails: it doesn't looks like a valid learning plan file!")
                     else:  # if it is a valid learning plan,
                         self.vocabulary_filename = file.name  # and set up the filename attribute
                         self.get_words_list()  # get words list from the learning plan,
-                        self.title("{} - Home ({}) - PolyglotAssistant 1.00"\
-                                   .format(self.vocabulary_filename, self.user))  # update the title
+                        self.title("{} - Home ({}) - PolyglotAssistant 1.00".format(self.vocabulary_filename, self.user)
+                                   )  # update the title
                         vocabulary_len = len(self.vocabulary_data)  # get the vocabulary length
                         if vocabulary_len > 12:  # if it is bigger, than 12,
                             self.wpg_var.set(12)  # set the default words-per-game value to 12
-                            self.wpg_spb.configure(to=vocabulary_len if vocabulary_len < 1000 else 999)  # set its max value
+                            self.wpg_spb.configure(
+                                to=vocabulary_len if vocabulary_len < 1000 else 999)  # set its max value
                         else:  # if it is less, than 12,
                             self.wpg_var.set(vocabulary_len)  # set the default words-per-game value to the length
                             self.wpg_spb.configure(to=vocabulary_len)  # set its max value
@@ -464,10 +486,12 @@ class HomeWindow(Toplevel):
         if self.vocabulary_data:  # if any vocabulary is opened,
             if self.vocabulary_filename in self.users_dict[self.user]["stats"]:  # if the user trained this file before
                 for pair in self.vocabulary_data:  # check every pair,
-                    if pair in self.users_dict[self.user]["stats"][self.vocabulary_filename]["good"]:  # if it is in the list of the "good" pairs,
+                    # if it is in the list of the "good" pairs,
+                    if pair in self.users_dict[self.user]["stats"][self.vocabulary_filename]["good"]:
                         self.wtree.insert("", END, values=pair, tag="good")  # add it to the pairs' list with tag "good"
                         self.good.append(pair)  # append pair to the list for good words' pairs
-                    elif pair in self.users_dict[self.user]["stats"][self.vocabulary_filename]["bad"]:  # if it is in the list of the "bad" pairs,
+                    # if it is in the list of the "bad" pairs,
+                    elif pair in self.users_dict[self.user]["stats"][self.vocabulary_filename]["bad"]:
                         self.wtree.insert("", END, values=pair, tag="bad")  # add it in the  list with tag "bad"
                         self.bad.append(pair)  # append pair to the list for bad words' pairs
                     else:
@@ -475,7 +499,9 @@ class HomeWindow(Toplevel):
                         self.wtree.insert("", END, values=pair, tag="unknown")  # add it to the list with "unknown" tag
                         self.unknown.append(pair)  # append the pair to the list for unknown words' pairs
             else:  # if this is the first time user uses this vocabulary,
-                self.users_dict[self.user]["stats"][self.vocabulary_filename] = {"good": set(), "bad": set()}  # add this filename to the users_dict
+                # add this filename to the users_dict
+                self.users_dict[self.user]["stats"][self.vocabulary_filename] = {"good": set(),
+                                                                                 "bad": set()}
                 for pair in self.vocabulary_data:  # add every pair
                     self.wtree.insert("", END, values=pair, tag="unknown")  # to the pairs' list with "unknown" tag,
                     self.unknown.append(pair)  # and append to the list for unknown words' pairs
@@ -494,7 +520,8 @@ class HomeWindow(Toplevel):
         """
         # if anything is opened, get the values from there, otherwise use queestion marks instead
         good, bad, unknown, total = (len(self.good), len(self.bad), len(self.unknown),
-                                       len(self.wtree.get_children())) if self.vocabulary_filename else ("?", "?", "?", "?")
+                                     len(self.wtree.get_children())) if self.vocabulary_filename else (
+            "?", "?", "?", "?")
         self.good_label["text"] = "Good: %s" % good
         self.bad_label["text"] = "Bad: %s" % bad
         self.unknown_label["text"] = "Unknown: %s" % unknown
@@ -542,25 +569,34 @@ class HomeWindow(Toplevel):
         if self.vocabulary_filename:  # if any vocabulary is opened,
             self.withdraw()  # close the Home window,
             gym = GymWindow(self.good, self.bad, self.unknown, self.wpg_var.get())  # and create a Gym window
-            if self.vocabulary_filename not in self.users_dict[self.user]["stats"]:  # if the user opens this vocabulary at first,
-                self.users_dict[self.user]["stats"][self.vocabulary_filename] = {"good": set(), "bad": set()}  # add it to the list
+            # if the user opens this vocabulary at first,
+            if self.vocabulary_filename not in self.users_dict[self.user]["stats"]:
+                self.users_dict[self.user]["stats"][self.vocabulary_filename] = {"good": set(),
+                                                                                 "bad": set()}  # add it to the list
             # Tidy the stats (reverse them to accord the vocabulary data)
             new_good = tidy_stats(gym.new_good, self.vocabulary_data)  # get the tidied good stats
             new_bad = tidy_stats(gym.new_bad, self.vocabulary_data)  # get the tidied bad stats
             for pair in new_good:  # process every pair in the new good-known words' list
-                if pair in self.users_dict[self.user]["stats"][self.vocabulary_filename]["bad"]:  # if the pair was in bad-known words before,
-                    self.users_dict[self.user]["stats"][self.vocabulary_filename]["bad"].remove(pair)  # remove it from there,
-                self.users_dict[self.user]["stats"][self.vocabulary_filename]["good"].add(pair)  # and add it to the good-known words' list
+                # if the pair was in bad-known words before,
+                if pair in self.users_dict[self.user]["stats"][self.vocabulary_filename]["bad"]:
+                    self.users_dict[self.user]["stats"][self.vocabulary_filename]["bad"].remove(
+                        pair)  # remove it from there,
+                self.users_dict[self.user]["stats"][self.vocabulary_filename]["good"].add(
+                    pair)  # and add it to the good-known words' list
             for pair in new_bad:  # process every pair in the new bad-known words' list
-                if pair in self.users_dict[self.user]["stats"][self.vocabulary_filename]["good"]:  # if the pair was in good-known words' list before,
-                    self.users_dict[self.user]["stats"][self.vocabulary_filename]["good"].remove(pair)  # remove it from there,
-                self.users_dict[self.user]["stats"][self.vocabulary_filename]["bad"].add(pair)  # and add it to the bad-known words list
+                # if the pair was in good-known words' list before,
+                if pair in self.users_dict[self.user]["stats"][self.vocabulary_filename]["good"]:
+                    self.users_dict[self.user]["stats"][self.vocabulary_filename]["good"].remove(
+                        pair)  # remove it from there,
+                self.users_dict[self.user]["stats"][self.vocabulary_filename]["bad"].add(
+                    pair)  # and add it to the bad-known words list
             try:  # try to
                 udat = open("users.dat", "wb")  # open the users.dat file,
                 pickle.dump(self.users_dict, udat)  # and dump the stats there
             except Exception as details:  # if there is an unexpected problem occured,
                 while retrycancel2bool(show_msg("Error",
-                                                "During saving the users.dat file an unexpected error occured. Statistics were not saved. "
+                                                "During saving the users.dat file an unexpected error occured. "
+                                                "Statistics were not saved. "
                                                 "Do you want to retry?\n\nDetails: %s (%s)"
                                                 % (details.__class__.__name__, details), icon="error",
                                                 type="retrycancel")):  # while the user asks to retry,
@@ -593,6 +629,7 @@ class GymWindow(Toplevel):
     :type unknown: list[tuples]
     :type wpg: int
     """
+
     def __init__(self, good, bad, unknown, wpg, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -648,7 +685,8 @@ class GymWindow(Toplevel):
             self.pair = self.queue.pop(0)  # get the pair from the queue
             self.word_label["text"] = self.pair[0]  # show the pair source
             self.time_pb.start(300)  # start the time progress bar with the 300ms interval
-            self.tg_after = self.after(29900, self.timeout)  # after the 29.9 seconds; not 30 seconds, because the progressbar restarts then
+            # after the 29.9 seconds; not 30 seconds - the progressbar restarts then
+            self.tg_after = self.after(29900, self.timeout)
             self.enable_controls()  # enable the controls
         else:  # if the queue is empty,
             self.disable_controls()  # disable the controls
@@ -679,8 +717,8 @@ class GymWindow(Toplevel):
             self.score += 1  # increase the score value by 1
             self.update_score_label()  # update the score label
             # if the current pair is not neither in good-known words nor in bad-known ones
-            if (not self.pair in self.new_good) and (not tuple(reversed(self.pair)) in self.new_good):
-                if (not self.pair in self.new_bad) and (not tuple(reversed(self.pair)) in self.new_bad):
+            if (self.pair not in self.new_good) and (not tuple(reversed(self.pair)) in self.new_good):
+                if (self.pair not in self.new_bad) and (not tuple(reversed(self.pair)) in self.new_bad):
                     self.new_good.add(self.pair)  # add it to the goods' one
             self.time_pb.stop()  # stop the progressbar
             self.after_cancel(self.tg_after)  # stop the timer event
@@ -709,7 +747,7 @@ class GymWindow(Toplevel):
             self.word_label["text"] = "Oops! {} \"{}\" <=> \"{}\"".format(action, *self.pair)  # update the word label
             self.disable_controls()  # disable controls
             # If the pair was not add to bad-known list before, add it now
-            if (not self.pair in self.new_bad) and (not tuple(reversed(self.pair)) in self.new_bad):
+            if (self.pair not in self.new_bad) and (not tuple(reversed(self.pair)) in self.new_bad):
                 self.new_bad.add(self.pair)  # add it to bad-known words set
                 if self.pair in self.new_good:  # if the pair is in the good words,
                     self.new_good.remove(self.pair)  # remove it from there
@@ -778,7 +816,7 @@ class GymWindow(Toplevel):
         :return: `True` or `False` depending on the answer quality
         :rtype: bool
         """
-        return True if self.translation_entry.get().replace("ё", "е").replace("Ё", "Е") == self.pair[1].\
+        return True if self.translation_entry.get().replace("ё", "е").replace("Ё", "Е") == self.pair[1]. \
             replace("ё", "е").replace("Ё", "Е") else False
 
     def update_score_label(self):
@@ -790,6 +828,7 @@ class GymWindow(Toplevel):
         """
 
         self.score_label["text"] = "%s/%s" % (self.score, self.totally)  # format the score label
+
 
 def show_usage():
     """
@@ -803,10 +842,11 @@ def show_usage():
                        "\n\nUsage:\nTrainer.exe vocabulary.pav")
     os._exit(0)  # terminate the process
 
+
 if __name__ == "__main__":
     # Check the command-line arguments
     if len(sys.argv) == 1:  # if no command-line arguments specified,
-        Trainer().mainloop()   # create a Trainer's window
+        Trainer().mainloop()  # create a Trainer's window
     elif len(sys.argv) == 2:  # if a file is specified as a command-line argument,
         if os.path.splitext(sys.argv[-1])[-1] == ".pav":  # if its extension is ".pav" (PolyglotAssistant Vocabulary)
             Trainer(sys.argv[-1].replace("\\", "/")).mainloop()  # create a window, and pass the file arg to opener

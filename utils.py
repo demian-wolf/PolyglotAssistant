@@ -12,7 +12,7 @@ def yesno2bool(result):
     :return: a bool interpretation of the user's answer
     :rtype: bool
     """
-    
+
     return True if result == "yes" else False
 
 
@@ -28,6 +28,7 @@ def retrycancel2bool(result):
 
     return True if result == "retry" else False
 
+
 def help_(_event=None):
     """
     Calls the "Help" Dialog.
@@ -37,8 +38,9 @@ def help_(_event=None):
     :return: no value
     :rtype: none
     """
-    
+
     pass
+
 
 def about(_event=None):
     """
@@ -49,9 +51,12 @@ def about(_event=None):
     :return: no value
     :rtype: none
     """
-    
+
     showinfo("About PolyglotAssistant",
-             "PolyglotAssistant 1.0 (C) Demian Wolf, 2019\nLearnWords is an easy way to learn words of foreign language - convenient learning plan editor and smart autotrainer.\nProgram licensed AS-IS\nThank you for using my program!")
+             "PolyglotAssistant 1.0 (C) Demian Wolf, 2019"
+             "\nLearnWords is an easy way to learn words of foreign language - "
+             "convenient learning plan editor and smart autotrainer."
+             "\nProgram licensed AS-IS\nThank you for using my program!")
 
 
 def contact_me(_event=None):
@@ -63,7 +68,7 @@ def contact_me(_event=None):
     :return: no value
     :rtype: none
     """
-    
+
     webbrowser.open("mailto:demianwolfssd@gmail.com")
 
 
@@ -100,7 +105,8 @@ def validate_users_dict(data):
         assert sorted(data[user]) == ["password", "stats"]  # must have password and stats
         assert isinstance(data[user]["stats"], dict)  # stats must be a dict
         for file in data[user]["stats"]:  # and every file in user's stats
-            assert sorted(data[user]["stats"][file].keys()) == ["bad", "good"]  # must have two lists - for good and for bad words
+            assert sorted(data[user]["stats"][file].keys()) == ["bad",
+                                                                "good"]  # must have two lists - for good and bad words
             for type_ in data[user]["stats"][file]:  # and every words' type (good/bad)
                 for pair in data[user]["stats"][file][type_]:  # must have pairs that
                     assert isinstance(pair, tuple)  # are tuples
@@ -119,6 +125,7 @@ def reverse_pairs(data):
     :rtype: list
     """
     return [tuple(reversed(pair)) for pair in data]  # every pair is reversed now
+
 
 def tidy_stats(result, vocabulary_content):
     """

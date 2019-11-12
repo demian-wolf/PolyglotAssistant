@@ -1,5 +1,5 @@
 from tkinter import *
-from tkinter.messagebox import askquestion, showinfo, showerror, _show as show_msg
+from tkinter.messagebox import showinfo, showerror, _show as show_msg
 from tkinter.filedialog import *
 from tkinter.ttk import Treeview, Entry, Scrollbar
 
@@ -12,14 +12,15 @@ class EditorFrame(Frame):
     """
     The vocabulary editor's frame class. Because it is in separate class, you can embed it both in ReadIt and Editor.
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
         # Let the widgets stretch (by configuring weight)
         self.rowconfigure(0, weight=1)
         for column_id in range(4):
             self.columnconfigure(column_id, weight=1)
-            
+
         # Create a Treeview widget to display the vocabulary words' list and its scrollbar
         self.wtree = Treeview(self, show="headings", columns=["word", "translation"], selectmode=EXTENDED)
         self.wtree.heading("word", text="Word")  # add the "Word" column
@@ -37,9 +38,11 @@ class EditorFrame(Frame):
 
         # Create a frame for the statusbar
         sbs_frame = Frame(self)  # create the statusbar frame
-        self.tot_sb = Label(sbs_frame, text="Totally: ?", relief=RIDGE)  # create a label that shows the total words quantity
+        self.tot_sb = Label(sbs_frame, text="Totally: ?",
+                            relief=RIDGE)  # create a label that shows the total words quantity
         self.tot_sb.grid(row=0, column=0, sticky="ew")  # show it using the grid geometry manager
-        self.mod_sb = Label(sbs_frame, text="Unmodified", relief=RIDGE)  # create a label that shows was the vocabulary modified
+        self.mod_sb = Label(sbs_frame, text="Unmodified",
+                            relief=RIDGE)  # create a label that shows was the vocabulary modified
         self.mod_sb.grid(row=0, column=1, sticky="ew")  # show it using the grid geometry manager
         sbs_frame.grid(row=2, column=0, columnspan=7, sticky="ew")  # show the whole frame using grid geometry manager
 
@@ -49,11 +52,12 @@ class EditorFrame(Frame):
         self.filename = "Untitled"  # the default filename is "Untitled"
 
         # Configuring the hotkeys (English only)
-        for key in ("AET", "aet"):  # bind keys with letters to work with both UPPERCASE and lowercase English keys       
+        for key in (
+                "AET", "aet"):  # bind keys with letters to work with both UPPERCASE and lowercase English keys
             self.master.bind("<Control-%s>" % key[0], self.select_all)
             self.master.bind("<Control-Alt-%s>" % key[0], self.add)
             self.master.bind("<Control-Alt-%s>" % key[1], self.edit)
-            
+
         self.master.bind("<Alt-Delete>", self.remove)
         self.master.bind("<Shift-Delete>", self.clear)
         self.master.bind("<Home>", self.select_first)
@@ -70,7 +74,8 @@ class EditorFrame(Frame):
         :rtype: none
         """
         if not self.saved:  # if the vocabulary is not saved,
-            result = show_msg("Warning", "Do you want to save your learning plan?", "warning", "yesnocancel")  # asks about an action
+            result = show_msg("Warning", "Do you want to save your learning plan?", "warning",
+                              "yesnocancel")  # asks about an action
             if result == "yes":  # if user asked to save,
                 self.save()  # it saves
                 if self.saved:  # if the file became saved,
@@ -80,7 +85,7 @@ class EditorFrame(Frame):
                 return True  # this vocabulary can be closed
             return False  # if the user said "Cancel" or the file was not saved, this vocabulary cannot be closed
         return True  # if the file was saved before, this vocabulary can be closed
-    
+
     def new(self, _event=None):
         """
         Creates a new vocabulary.
@@ -112,13 +117,18 @@ class EditorFrame(Frame):
                 if vocabulary_filename:  # if a vocabulary filename was specified to this function
                     vocabulary_file = open(vocabulary_filename, "rb")  # open the vocabulary file
                 else:  # if nothing was specified,
-                    vocabulary_file = askopenfile(mode="rb", filetypes=[("PolyglotAssistant Vocabulary", "*.pav")])  # ask a PAV (PolyglotAssistant Vocabulary) file to open
+                    vocabulary_file = askopenfile(mode="rb", filetypes=[("PolyglotAssistant Vocabulary",
+                                                                         "*.pav")])  # ask a .PAV file to open
             except FileNotFoundError as details:  # if submitted file disappeared suddenly
-                showerror("Error", "Couldn't open the file. Check file location.\n\nDetails: FileNotFoundError (%s)" % details)
+                showerror("Error",
+                          "Couldn't open the file. Check file location.\n\nDetails: FileNotFoundError (%s)" % details)
             except PermissionError as details:  # if the access to the file denied
-                showerror("Error", "Couldn't open the file. Check your permissions to read it.\n\nDetails: PermissionError (%s)" % details)
+                showerror("Error",
+                          "Couldn't open the file. Check your permissions to read it."
+                          "\n\nDetails: PermissionError (%s)" % details)
             except Exception as details:  # if any other problem happened
-                showerror("Error", "During opening the file unexpected error occured\n\nDetails: %s (%s)" % (details.__class__.__name__, details))
+                showerror("Error", "During opening the file unexpected error occured\n\nDetails: %s (%s)" % (
+                    details.__class__.__name__, details))
             else:  # if all is OK,
                 if vocabulary_file:  # if anything was opened...
                     try:  # try to
@@ -128,13 +138,15 @@ class EditorFrame(Frame):
                                   "The file is corrupted or has an unsupported format!\n\nDetails: %s" % details)
                     except Exception as details:  # if unexpected error occured,
                         showerror("Error",
-                                  "During opening the file unexpected error occured\n\nDetails: %s (%s)" % (details.__class__.__name__, details))
+                                  "During opening the file unexpected error occured\n\nDetails: %s (%s)" % (
+                                      details.__class__.__name__, details))
                     else:  # if the file can be decoded,
                         try:
                             validate_vocabulary_data(vocabulary_data)  # check its format
                         except AssertionError:  # if it is invalid,
                             showerror("Error",
-                                      "The file is corrupted or has an unsupported format!\n\nDetails: invalid object is pickled.")
+                                      "The file is corrupted or has an unsupported format!"
+                                      "\n\nDetails: invalid object is pickled.")
                         else:  # if the file format is OK,
                             self.wtree.delete(*self.wtree.get_children())  # clear the words-list,
                             for pair in vocabulary_data:  # and insert the words from opened vocabulary there
@@ -161,10 +173,12 @@ class EditorFrame(Frame):
             self.filename = outfile.name  # update the opened file's filename, if changed
             self.set_saved(True)  # set state to saved
         except PermissionError as details:  # if there is a problem with access permissions,
-            showerror("Error", "During saving the file an error occured. Check your write permissions\n\nDetails: %s" % details)
+            showerror("Error",
+                      "During saving the file an error occured. Check your write permissions\n\nDetails: %s" % details)
         except Exception as details:  # if there is an unexpected problem occured,
-            showerror("Error", "During saving the file an unexpected error occured.\n\nDetails: %s (%s)" % (details.__class__.__name__, details))
-        
+            showerror("Error", "During saving the file an unexpected error occured.\n\nDetails: %s (%s)" % (
+                details.__class__.__name__, details))
+
     def save(self, _event=None):
         """
         Saves the file to the same path and filename, if untitled - calls save as.
@@ -174,11 +188,11 @@ class EditorFrame(Frame):
         :return: no value
         :rtype: none
         """
-        if self.filename == "Untitled":  # if the file was already saved (even during the other session, and then opened now),
-            self.save_as() # save as (to ask user how to name the file)
-        else:  # if the file is untitled
+        if self.filename == "Untitled":  # if the file is untitled,
+            self.save_as()  # save as (to ask user how to name the file)
+        else:  # if the file was already saved (even during the other session, and then opened now),
             self._save(self.filename)  # save the file with the same filename  
-            
+
     def save_as(self, _event=None):
         """
         Save the file as,
@@ -189,9 +203,11 @@ class EditorFrame(Frame):
         :rtype: none
         """
         try:  # try to
-            outfilename = asksaveasfilename(defaultextension=".", filetypes=[("PolyglotAssistant Vocabulary", ".pav")])  # ask a user for the filename to save to
+            outfilename = asksaveasfilename(defaultextension=".", filetypes=[
+                ("PolyglotAssistant Vocabulary", ".pav")])  # ask a user for the filename to save to
         except Exception as details:  # if an unexpected problem occured,
-            showerror("Error", "An unexpected error occured.\n\nDetails: %s (%s)" % (details, details.__class__.__name__))
+            showerror("Error",
+                      "An unexpected error occured.\n\nDetails: %s (%s)" % (details, details.__class__.__name__))
         else:  # if could get the filename,
             if outfilename:  # if user selected the file (if he canceled the operation, outfilename will equal to None)
                 self._save(outfilename)  # save the vocabulary to selected file
@@ -210,7 +226,7 @@ class EditorFrame(Frame):
         self.set_saved(False)  # set the saved state to False (the vocabulary content was modified)
         self.wtree.selection_set(self.wtree.get_children()[-1])  # select the last word of the vocabulary
         self.wtree.yview_moveto(1)  # move to the end of the vocabulary
-      
+
     def add(self, _event=None):
         """
         Open the "Add" dialog to add a new word to the vocabulary.
@@ -258,7 +274,8 @@ class EditorFrame(Frame):
         """
         if self.wtree.selection():  # if something is selected,
             if yesno2bool(show_msg("Warning",
-                                   "Do you want to remove all the selected (%s) word's pairs?\nNote this action cannot be undone!" % len(self.wtree.selection()),
+                                   "Do you want to remove all the selected (%s) word's pairs?"
+                                   "\nNote this action cannot be undone!" % len(self.wtree.selection()),
                                    "warning", "yesno")):  # ask the user to continue deletion
                 self.wtree.delete(*self.wtree.selection())  # delete selected words
                 self.set_saved(False)  # set saved state to unsaved
@@ -277,7 +294,9 @@ class EditorFrame(Frame):
         """
         if self.wtree.get_children():  # if there are some words in vocabulary,
             if yesno2bool(show_msg("Warning",
-                                   "All the couples (%s) from this list will be permanently deleted. Do you want to continue?\nNote this action cannot be undone!" % len(self.wtree.get_children()),
+                                   "All the couples (%s) from this list will be permanently deleted. "
+                                   "Do you want to continue?"
+                                   "\nNote this action cannot be undone!" % len(self.wtree.get_children()),
                                    "warning", "yesno")):  # ask does user want to continue with clearing
                 self.wtree.delete(*self.wtree.get_children())  # clear the vocabulary
                 self.set_saved(False)  # set state to unsaved
@@ -304,7 +323,7 @@ class EditorFrame(Frame):
         :return: no value
         :rtype: none
         """
-        first_item = self.wtree.get_children()[0]   # get the first item of the words' list
+        first_item = self.wtree.get_children()[0]  # get the first item of the words' list
         self.wtree.selection_set(first_item)  # set the selection to it
         self.wtree.yview_moveto(0)  # scroll to the start of the words' list (by Y)
 
@@ -372,6 +391,7 @@ class EditorFrame(Frame):
         """
         self.tot_sb.configure(text="Totally: %s" % len(self.wtree.get_children()))
 
+
 class EditPair(Toplevel):
     """
     Class for the pair editor window.
@@ -381,6 +401,7 @@ class EditPair(Toplevel):
     :type word: str
     :type translation: str
     """
+
     def __init__(self, title, word=None, translation=None):
         super().__init__()
 
@@ -392,12 +413,16 @@ class EditPair(Toplevel):
         self.word_entry = Entry(self)  # create the entry widget to enter the word
         self.word_entry.grid(row=0, column=1)  # show the word entry using the grid geometry manager
         self.word_entry.focus()  # focus on the word entry
-        self.word_entry.bind("<Return>", lambda _event: self.translation_entry.focus())  # when the user press "Enter" key focus on the translation entry
+        self.word_entry.bind("<Return>",
+                             lambda _event: self.translation_entry.focus()
+                             )  # when the user press "Enter" key focus on the translation entry
         Label(self, text="Translation:").grid(row=1, column=0)  # create the "Translation:" label, show it using grid GM
         self.translation_entry = Entry(self)  # create the translation entry to let user enter the translation
         self.translation_entry.grid(row=1, column=1)  # and show it using the grid geometry manager
-        self.translation_entry.bind("<Return>", self.ok)  # submit changes, when the user presses Enter after entering the translation
-        Button(self, text="OK", command=self.ok).grid(row=2, column=0, columnspan=2, sticky="ew")  # create the OK button
+        self.translation_entry.bind("<Return>",
+                                    self.ok)  # save changes, when the user presses Enter after entering the translation
+        Button(self, text="OK", command=self.ok).grid(row=2, column=0, columnspan=2,
+                                                      sticky="ew")  # create the OK button
         self.bind("<Escape>", lambda event: self.destroy())  # if the user presses "Escape" key, close this dialog
 
         # if we are editing the word,
@@ -405,7 +430,7 @@ class EditPair(Toplevel):
             self.word_entry.insert(END, word)  # insert it in the word entry
         if translation:  # if the translation was passed,
             self.translation_entry.insert(END, translation)  # insert it in the translation entry
-        self.data = None  # before the user submits something, the data is None (avoid AttributeError, when the user canceles the operation)
+        self.data = None  # the data is None before the submit (avoid AttributeError, when the operation is canceled)
         self.wait_window()  # wait while the window is closed
 
     def ok(self, _event=None):

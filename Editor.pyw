@@ -24,26 +24,27 @@ class Editor(Tk):
     :return: no value
     :rtype: none
     """
+
     def __init__(self, *args, vocabulary_filename=None, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.tray_icon = None  # create the tray_icon attribute (will be changed when the application is hidden to tray)
 
         self.protocol("WM_DELETE_WINDOW", self.hide_to_tray)  # ask yes/no/cancel before exit
-        
+
         # Configure rows and columns to let the widgets stretch
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
-        
+
         # Create the vocabulary editor
         self.vocabulary_editor = EditorFrame()  # create the vocabulary_-editor
         self.vocabulary_editor.grid(sticky="nswe")  # show it using grid geometry manager
         self.vocabulary_editor.set_saved(True)  # set the vocabulary "saved" state to True
-        
+
         # Create menu at the top of the main window
         self.menubar = Menu(self, tearoff=False)  # create the menubar
         self.config(menu=self.menubar)  # set the menubar widget for the main window
-        
+
         # Create the "File" menu and add the appropriate entries
         self.filemenu = Menu(self.menubar, tearoff=False)
         self.filemenu.add_command(label="New", command=self.vocabulary_editor.new, accelerator="Ctrl+N")
@@ -81,7 +82,7 @@ class Editor(Tk):
             self.bind("<Control-%s>" % key[1], self.vocabulary_editor.open)
             self.bind("<Control-%s>" % key[2], self.vocabulary_editor.save)
             self.bind("<Control-Shift-%s>" % key[2], self.vocabulary_editor.save_as)
-            
+
         if vocabulary_filename:  # if a file was specified in command-line,
             self.vocabulary_editor.open(vocabulary_filename=vocabulary_filename)  # open the vocabulary
 
@@ -102,8 +103,8 @@ class Editor(Tk):
                     alphabet_dict[first_letter] = 1  # set the first char count to 1
             # create the results' list in a way it is shown in the dialog
             result_list = ["By first letters:"]  # the start caption
-            result_list.extend(["{} - {}".format(first_letter, count) for first_letter,
-                                                                          count in sorted(alphabet_dict.items())])
+            result_list.extend(
+                ["{} - {}".format(first_letter, count) for first_letter, count in sorted(alphabet_dict.items())])
             result_list.append("\nTotally: {}".format(len(self.vocabulary_editor.wtree.get_children())))  # totally
             showinfo("Statistics", ("\n".join(result_list)))  # show the statistics dialogue
         else:  # if the vocabulary is empty,
@@ -125,7 +126,7 @@ class Editor(Tk):
         # icon mainloop
         self.deiconify()  # when the icon mainloop had been stopped, show the window again
         self.focus_force()  # focus on it
-        
+
     def tray_exit(self):
         """
         Run exit command from tray.
@@ -135,7 +136,7 @@ class Editor(Tk):
         """
         self.tray_icon.stop()  # stop the tray icon mainloop
         self.after(0, self.exit_)  # exit from the application
-        
+
     def exit_(self):
         """
         Exits the application.
@@ -155,7 +156,9 @@ class Editor(Tk):
         :rtype: none
         """
         self.title("%s%s - PolyglotAssistant 1.00 Editor" % (self.vocabulary_editor.unsaved_prefix,
-                                                     self.vocabulary_editor.filename))   # formats the title
+                                                             self.vocabulary_editor.filename))  # formats the title
+
+
 def show_usage():
     """
     Shows the usage of the command-line interface.
@@ -165,8 +168,8 @@ def show_usage():
     """
     Tk().withdraw()  # hide the window (otherwise, an empty window is shown)
     showerror("Error", "You are trying to run this program in an unusual way."
-                           "\n\nUsage:\nEditor.exe vocabulary.pav")  # displays the error
-    os._exit()  # terminates the application process
+                       "\n\nUsage:\nEditor.exe vocabulary.pav")  # displays the error
+    os._exit(0)  # terminates the application process
 
 
 if __name__ == "__main__":
