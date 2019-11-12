@@ -144,7 +144,7 @@ class UserLoginWindow(Toplevel):
                     self.close()  # terminate the program process
                 except Exception as details:  # if any other problem happened
                     showerror("Error",
-                              "During opening the users.dat file unexpected error occured. "
+                              "During opening the users.dat file unexpected error occurred. "
                               "Application will exit now.\n\nDetails: %s (%s)" % (
                                   details.__class__.__name__, details))
                     self.close()  # terminate the program process
@@ -154,9 +154,9 @@ class UserLoginWindow(Toplevel):
                     except (pickle.UnpicklingError, EOFError) as details:  # if it's spoiled, or has unsupported format
                         showerror("Error",
                                   "The users.dat is corrupted or has an unsupported format!\n\nDetails: %s" % details)
-                    except Exception as details:  # if unexpected error occured,
+                    except Exception as details:  # if unexpected error occurred,
                         showerror("Error",
-                                  "During opening the users.dat unexpected error occured\n\nDetails: %s (%s)" % (
+                                  "During opening the users.dat unexpected error occurred\n\nDetails: %s (%s)" % (
                                       details.__class__.__name__, details))
             else:  # if there is no "users.dat" in the app path,
                 ulist = {}  # create a new users' dictionary
@@ -167,7 +167,7 @@ class UserLoginWindow(Toplevel):
                     pickle.dump(ulist, open("users.dat", "wb"))  # dump it all into new "users.dat" file
                 except Exception as details:  # if something went wrong,
                     while retrycancel2bool(show_msg("Error",
-                                                    "During saving the users.dat file an unexpected error occured. "
+                                                    "During saving the users.dat file an unexpected error occurred. "
                                                     "New user was not saved. "
                                                     "Do you want to retry?\n\nDetails: %s (%s)"
                                                     % (details.__class__.__name__, details), icon="error",
@@ -200,7 +200,7 @@ class UserLoginWindow(Toplevel):
                         pickle.dump(self.users_dict, outf)  # dump the dictionary
                         outf.close()  # close the "users.dat"
                     except PermissionError:
-                        # if there is a PermissionError occured, show an appropriate error.
+                        # if there is a PermissionError occurred, show an appropriate error.
                         showerror("Error", "Unable to access the user.dat file. Check your permissions for reading.")
                     self.update_ulist()  # update the users' list from the "users.dat"
                 else:
@@ -593,9 +593,9 @@ class HomeWindow(Toplevel):
             try:  # try to
                 udat = open("users.dat", "wb")  # open the users.dat file,
                 pickle.dump(self.users_dict, udat)  # and dump the stats there
-            except Exception as details:  # if there is an unexpected problem occured,
+            except Exception as details:  # if there is an unexpected problem occurred,
                 while retrycancel2bool(show_msg("Error",
-                                                "During saving the users.dat file an unexpected error occured. "
+                                                "During saving the users.dat file an unexpected error occurred. "
                                                 "Statistics were not saved. "
                                                 "Do you want to retry?\n\nDetails: %s (%s)"
                                                 % (details.__class__.__name__, details), icon="error",

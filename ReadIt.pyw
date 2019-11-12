@@ -33,7 +33,7 @@ class ReadIt(Tk):
         self.vocabulary_opened = False  # and vocabulary are not opened yet
         # Vocabulary filename is controlled by the EditorFrame, but the text is controlled by the ReadIt
         # Set the default text filename, when the text was not opened
-        self.text_filename = "Non-opened"
+        self.text_filename = "Не відкрито"
 
         self.protocol("WM_DELETE_WINDOW", self.exit)  # call the self.exit function when user exits
 
@@ -51,44 +51,44 @@ class ReadIt(Tk):
         self.configure(menu=self.menubar)  # attach it to the ReadIt window
 
         self.filemenu = Menu(self.menubar, tearoff=False)  # create the "File" menu and add the appropriate entries
-        self.filemenu.add_command(label="Open a text", command=self.open_text, accelerator="Ctrl+O")
+        self.filemenu.add_command(label="Відкрити текст", command=self.open_text, accelerator="Ctrl+O")
         self.filemenu.add_separator()
-        self.filemenu.add_command(label="New vocabulary", command=self.vocabulary_editor.new, accelerator="Ctrl+Alt+N")
-        self.filemenu.add_command(label="Open a vocabulary", command=self.vocabulary_editor.open,
+        self.filemenu.add_command(label="Новий словник", command=self.vocabulary_editor.new, accelerator="Ctrl+Alt+N")
+        self.filemenu.add_command(label="Відкрити словник", command=self.vocabulary_editor.open,
                                   accelerator="Ctrl+Alt+O")
-        self.filemenu.add_command(label="Save a vocabulary", command=self.vocabulary_editor.save,
+        self.filemenu.add_command(label="Зберегти словник", command=self.vocabulary_editor.save,
                                   accelerator="Ctrl+Alt+S")
-        self.filemenu.add_command(label="Save as a vocabulary", command=self.vocabulary_editor.save_as,
+        self.filemenu.add_command(label="Зберегти як словник", command=self.vocabulary_editor.save_as,
                                   accelerator="Ctrl+Alt+Shift+S")
         self.filemenu.add_separator()
-        self.filemenu.add_command(label="Exit", command=self.exit, accelerator="Alt+F4")
-        self.menubar.add_cascade(label="File", menu=self.filemenu)  # attach it to the menubar
+        self.filemenu.add_command(label="Вихід", command=self.exit, accelerator="Alt+F4")
+        self.menubar.add_cascade(label="Файл", menu=self.filemenu)  # attach it to the menubar
 
         self.bookmarksmenu = Menu(self.menubar,
                                   tearoff=False)  # create the "Bookmarks" menu and add the appropriate entries
         self.rem_bookmarksmenu = Menu(self.bookmarksmenu, tearoff=False)  # create the "Remove >" embedded menu
         self.goto_bookmarksmenu = Menu(self.bookmarksmenu, tearoff=False)  # create the "Go to >" nested menu
-        self.bookmarksmenu.add_command(label="Add", command=self.add_bookmark)
-        self.bookmarksmenu.add_cascade(label="Remove", menu=self.rem_bookmarksmenu)  # attach it to the "Bookmarks" menu
-        self.bookmarksmenu.add_command(label="Clear all", command=self.clear_all_bookmarks)
-        self.bookmarksmenu.add_cascade(label="Go to", menu=self.goto_bookmarksmenu)  # attach it to the "Bookmarks" menu
-        self.menubar.add_cascade(label="Bookmarks", menu=self.bookmarksmenu)  # attach it to the menubar
+        self.bookmarksmenu.add_command(label="Додати", command=self.add_bookmark)
+        self.bookmarksmenu.add_cascade(label="Видалити", menu=self.rem_bookmarksmenu)  # attach it to the "Bookmarks" menu
+        self.bookmarksmenu.add_command(label="Очистити", command=self.clear_all_bookmarks)
+        self.bookmarksmenu.add_cascade(label="Перейти", menu=self.goto_bookmarksmenu)  # attach it to the "Bookmarks" menu
+        self.menubar.add_cascade(label="Закладки", menu=self.bookmarksmenu)  # attach it to the menubar
         # when the program is started, the "Bookmarks" menu is disabled (because no text file was opened)
-        self.menubar.entryconfigure("Bookmarks", state="disabled")
+        self.menubar.entryconfigure("Закладки", state="disabled")
 
         self.helpmenu = Menu(self.menubar, tearoff=False)  # create the "Help" menu and add the appropriate entries
-        self.helpmenu.add_command(label="PolyglotAssistant Help", command=help_, accelerator="F1")
+        self.helpmenu.add_command(label="Виклик допомоги", command=help_, accelerator="F1")
         self.helpmenu.add_separator()
-        self.helpmenu.add_command(label="About PolyglotAssistant", command=about, accelerator="Ctrl+F1")
-        self.helpmenu.add_command(label="Contact me", command=contact_me, accelerator="Ctrl+Shift+F1")
-        self.menubar.add_cascade(menu=self.helpmenu, label="Help")  # attach it to the menubar
+        self.helpmenu.add_command(label="Про PolyglotAssistant", command=about, accelerator="Ctrl+F1")
+        self.helpmenu.add_command(label="Зв'яжіться зі мною", command=contact_me, accelerator="Ctrl+Shift+F1")
+        self.menubar.add_cascade(menu=self.helpmenu, label="Допомога")  # attach it to the menubar
 
         self.iconbitmap("icon_32x32.ico")  # show the left-top window icon
 
         # let the widgets stretch using grid_columnconfigure method
         self.grid_columnconfigure(0, weight=1)
 
-        self.textbox = Text(self, wrap="word", state="disabled")  # create the textbox widget,
+        self.textbox = Text(self, wrap="word")  # create the textbox widget,
         self.textbox.grid(row=0, column=0, rowspan=6, sticky="nswe")  # and show it using grid geometry manager
         self.textbox.bind("<Button-3>",
                           self.select_and_translate)  # select and translate the unknown words by right-click
@@ -155,9 +155,10 @@ class ReadIt(Tk):
             self.bookmarks_data = {}  # bookmarks_data is an empty dict, where user can add bookmarks
         except Exception as details:  # if there is another problem,
             self.withdraw()  # hide the window
-            showerror("Error",
-                      "Couldn't load the bookmarks list. You won't be able to use bookmarks during this session."
-                      "\n\nDetails: %s (%s)" % (details.__class__.__name__, details))  # show the appropriate message
+            showerror("Помилка",
+                      "Не вдалося завантажити список закладок, "
+                      "тому ви не зможете користуватися закладками під час цієї сессії."
+                      "\n\nДеталі: %s (%s)" % (details.__class__.__name__, details))  # show the appropriate message
             self.deiconify()  # show the window again
 
         # if opening some files using command-line
@@ -185,24 +186,21 @@ class ReadIt(Tk):
                 if filename:  # if user didn't click "Cancel" button or closed the dialog for opening the file
                     with open(filename, "r") as file:  # open the file for reading,
                         data = file.read()  # read it
-                        self.textbox.configure(
-                            state="normal")  # activate the textbox (otherwise, no text will be inserted)
                         self.textbox.delete("0.0", "end")  # clear the textbox (won't work if couldn't open the file),
                         self.textbox.insert("0.0", data)  # and insert the data from the new file
-                        self.textbox.configure(
-                            state="disabled")  # disable the textbox (user can't change the textbox content)
                         self.text_filename = filename  # update the text_filename attribute,
                         self.text_opened = True  # text_opened attribute,
                         self.update_title()  # and the title
                         if self.bookmarks_data is not None:  # if the bookmarks.dat was opened without errors),
-                            self.menubar.entryconfig("Bookmarks", state="normal")  # enable "Bookmarks menu"
+                            self.menubar.entryconfig("Закладки", state="normal")  # enable "Bookmarks menu"
                             self.update_bookmarks_menu()  # updates the bookmarks menu entries as in the opened file
             except UnicodeDecodeError as details:  # if the file has unsupported encoding,
-                showerror("Error",
-                          "The file has unsupported encoding or this is not a plain text file (e.g. *.txt, *.log etc), "
-                          "so it can't be opened.\n\nDetails: %s (%s)" % (details.__class__.__name__, details))
+                showerror("Помилка",
+                          "Кодування цього текстового файлу не підтримується, або це не простий текстовий файл "
+                          "(наприклад, .txt, .log тощо), тому його не можна відкрити."
+                          "\n\nДеталі: %s (%s)" % (details.__class__.__name__, details))
             except Exception as details:  # if there is an error occurred,
-                showerror("Error", "During opening the file an unexpected error occured\n\nDetails: %s (%s)" % (
+                showerror("Помилка", "Під час відкриття цього файлу сталася невідома помилка.\n\nДеталі: %s (%s)" % (
                     details.__class__.__name__, details))  # show the appropriate message
 
     def translate_word(self, _event=None):
@@ -224,8 +222,8 @@ class ReadIt(Tk):
                                                             src).text  # translate using the Google Translator API
                 self.translation_variable.set(result)  # update the translation variable
             except Exception as details:  # if something went wrong,
-                showerror("Error",
-                          "Couldn't translate the word. Check your Internet connection.\n\nDetails: %s (%s)" % (
+                showerror("Помилка",
+                          "Не вдалося перекласти слово. Перевірте доступ до мережі Інтернет!\n\nДеталі: %s (%s)" % (
                               details.__class__.__name__, details))
         else:  # if nothing was entered,
             self.translation_variable.set("")  # clear the translation variable
@@ -308,7 +306,7 @@ class ReadIt(Tk):
         :return: no value
         :rtype: none
         """
-        if yesno2bool(show_msg("Warning", "Do you really want to remove this bookmark?", "warning",
+        if yesno2bool(show_msg("Увага", "Ви дійсно хочете видалити цю закладку?", "warning",
                                "yesno")):  # ask warning about bookmark removal
             self.bookmarks_data[self.text_filename].remove(bookmark)  # if the users says "Yes", remove it
         self.update_bookmarks_menu()  # update bookmarks_menu
@@ -331,7 +329,7 @@ class ReadIt(Tk):
         :rtype: none
         """
         if yesno2bool(
-                show_msg("Warning", "Do you really want to clear all the bookmarks list for this file?", "warning",
+                show_msg("Увага", "Ви дійсно хочете очистити весь список закладок для цього файлу?", "warning",
                          "yesno")):  # if the user confirms the clearing
             del self.bookmarks_data[self.text_filename]  # remove all the bookmarks for the current filename
         self.update_bookmarks_menu()  # update bookmarks' menu entries
@@ -344,8 +342,8 @@ class ReadIt(Tk):
         :return: no value
         :rtype: none
         """
-        self.bookmarksmenu.entryconfigure("Remove", state="disabled")  # disable "Remove >" submenu
-        self.bookmarksmenu.entryconfigure("Go to", state="disabled")  # disable "Go to >" submenu
+        self.bookmarksmenu.entryconfigure("Видалити", state="disabled")  # disable "Remove >" submenu
+        self.bookmarksmenu.entryconfigure("Перейти", state="disabled")  # disable "Go to >" submenu
 
     def enable_bookmarks_lst(self):
         """
@@ -355,8 +353,8 @@ class ReadIt(Tk):
         :return: no value
         :rtype: none
         """
-        self.bookmarksmenu.entryconfigure("Remove", state="normal")  # enable "Remove >" submenu
-        self.bookmarksmenu.entryconfigure("Go to", state="normal")  # enbale "Go to >" submenu
+        self.bookmarksmenu.entryconfigure("Видалити", state="normal")  # enable "Remove >" submenu
+        self.bookmarksmenu.entryconfigure("Перейти", state="normal")  # enbale "Go to >" submenu
 
     def update_bookmarks_menu(self):
         """
@@ -393,10 +391,10 @@ class ReadIt(Tk):
         try:  # try to
             with open("bookmarks.dat", "wb") as file:  # open bookmarks.dat for writing
                 pickle.dump(self.bookmarks_data, file)  # update it with new bookmarks
-        except Exception as details:  # if an error occured, show an appropriate warning and ask to retry
-            while retrycancel2bool(show_msg("Error",
-                                            "During adding a new bookmark an error occured. "
-                                            "Would you like to retry?\n\nDetails: %s (%s)"
+        except Exception as details:  # if an error occurred, show an appropriate warning and ask to retry
+            while retrycancel2bool(show_msg("Помилка",
+                                            "Під час створення нової закладки сталася помилка. "
+                                            "Чи не бажаєте повторити спробу?\n\nДеталі: %s (%s)"
                                             % (details.__class__.__name__, details), icon="error",
                                             type="retrycancel")):  # while user allows to retry,
                 try:  # try to
@@ -415,8 +413,8 @@ class ReadIt(Tk):
         :rtype: none
         """
         if self.text_opened and self.bookmarks_data is not None:  # if text was opened and bookmarks were not disabled
-            result = askyesnocancel("Add bookmark?",
-                                    "Do you want to add a bookmark before exit?")  # ask user about adding a bookmark
+            result = askyesnocancel("Додати закладку",
+                                    "Чи бажаєте додати закладку перед продовженням?")  # ask user about adding a bookmark
             if result:  # if he clicks "Yes",
                 self.add_bookmark()  # add a new bookmark,
                 # and then return True
@@ -443,9 +441,9 @@ def show_usage():
     :rtype: none
     """
     Tk().withdraw()  # create and hide a Tk() window (to avoid the blank window appearance on the screen)
-    showerror("Error",
-              "You are trying to run this program in an unusual way."
-              "\n\nUsage:\nReadIt.exe text.*\nReadIt.exe vocabulary.pav"
+    showerror("Помилка",
+              "Ви намагаєтеся відкрити цю програму якимось дивним чином."
+              "\n\nВикористання:\nReadIt.exe text.*\nReadIt.exe vocabulary.pav"
               "\nReadIt.exe text.* vocabulary.pav")  # show the command-line usage
     os._exit(0)  # terminate the application process
 

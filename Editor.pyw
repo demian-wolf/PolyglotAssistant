@@ -47,29 +47,29 @@ class Editor(Tk):
 
         # Create the "File" menu and add the appropriate entries
         self.filemenu = Menu(self.menubar, tearoff=False)
-        self.filemenu.add_command(label="New", command=self.vocabulary_editor.new, accelerator="Ctrl+N")
-        self.filemenu.add_command(label="Open", command=self.vocabulary_editor.open, accelerator="Ctrl+O")
-        self.filemenu.add_command(label="Save", command=self.vocabulary_editor.save, accelerator="Ctrl+S")
-        self.filemenu.add_command(label="Save As", command=self.vocabulary_editor.save_as, accelerator="Ctrl+Shift+S")
-        self.filemenu.add_command(label="Statistics", command=self.statistics)
+        self.filemenu.add_command(label="Новий", command=self.vocabulary_editor.new, accelerator="Ctrl+N")
+        self.filemenu.add_command(label="Відкрити", command=self.vocabulary_editor.open, accelerator="Ctrl+O")
+        self.filemenu.add_command(label="Зберегти", command=self.vocabulary_editor.save, accelerator="Ctrl+S")
+        self.filemenu.add_command(label="Зберегти як", command=self.vocabulary_editor.save_as, accelerator="Ctrl+Shift+S")
+        self.filemenu.add_command(label="Статистика", command=self.statistics)
         self.filemenu.add_separator()
-        self.filemenu.add_command(label="Hide to tray", command=self.hide_to_tray)
-        self.filemenu.add_command(label="Exit", command=self.exit_, accelerator="Alt+F4")
-        self.menubar.add_cascade(menu=self.filemenu, label="File")
+        self.filemenu.add_command(label="Сховати до трею", command=self.hide_to_tray)
+        self.filemenu.add_command(label="Вихід", command=self.exit_, accelerator="Alt+F4")
+        self.menubar.add_cascade(menu=self.filemenu, label="Файл")
         # Create the "Edit" menu and add the appropriate entries
         self.editmenu = Menu(self.menubar, tearoff=False)
-        self.editmenu.add_command(label="Add", command=self.vocabulary_editor.add, accelerator="Ctrl+Alt+A")
-        self.editmenu.add_command(label="Edit", command=self.vocabulary_editor.edit, accelerator="Ctrl+Alt+E")
-        self.editmenu.add_command(label="Remove", command=self.vocabulary_editor.remove, accelerator="Alt+Del")
-        self.editmenu.add_command(label="Clear", command=self.vocabulary_editor.clear, accelerator="Shift+Del")
-        self.menubar.add_cascade(menu=self.editmenu, label="Edit")
+        self.editmenu.add_command(label="Додати", command=self.vocabulary_editor.add, accelerator="Ctrl+Alt+A")
+        self.editmenu.add_command(label="Редагувати", command=self.vocabulary_editor.edit, accelerator="Ctrl+Alt+E")
+        self.editmenu.add_command(label="Видалити", command=self.vocabulary_editor.remove, accelerator="Alt+Del")
+        self.editmenu.add_command(label="Очистити", command=self.vocabulary_editor.clear, accelerator="Shift+Del")
+        self.menubar.add_cascade(menu=self.editmenu, label="Правка")
         # Create the "Help" menu and add the appropriate entries
         self.helpmenu = Menu(self.menubar, tearoff=False)
-        self.helpmenu.add_command(label="PolyglotAssistant Help", command=help_, accelerator="F1")
+        self.helpmenu.add_command(label="Виклик допомоги", command=help_, accelerator="F1")
         self.helpmenu.add_separator()
-        self.helpmenu.add_command(label="About PolyglotAssistant", command=about, accelerator="Ctrl+F1")
-        self.helpmenu.add_command(label="Contact me", command=contact_me, accelerator="Ctrl+Shift+F1")
-        self.menubar.add_cascade(menu=self.helpmenu, label="Help")
+        self.helpmenu.add_command(label="Про PolyglotAssistant", command=about, accelerator="Ctrl+F1")
+        self.helpmenu.add_command(label="Зв'яжіться зі мною", command=contact_me, accelerator="Ctrl+Shift+F1")
+        self.menubar.add_cascade(menu=self.helpmenu, label="Допомога")
 
         self.iconbitmap("icon_32x32.ico")  # show the left-top window icon
 
@@ -102,13 +102,13 @@ class Editor(Tk):
                 else:  # if the letter was found the first time (so it wasn't in the alphabet_dict before)
                     alphabet_dict[first_letter] = 1  # set the first char count to 1
             # create the results' list in a way it is shown in the dialog
-            result_list = ["By first letters:"]  # the start caption
+            result_list = ["За першою літерою:"]  # the start caption
             result_list.extend(
                 ["{} - {}".format(first_letter, count) for first_letter, count in sorted(alphabet_dict.items())])
-            result_list.append("\nTotally: {}".format(len(self.vocabulary_editor.wtree.get_children())))  # totally
-            showinfo("Statistics", ("\n".join(result_list)))  # show the statistics dialogue
+            result_list.append("\nУсього: {}".format(len(self.vocabulary_editor.wtree.get_children())))  # totally
+            showinfo("Статистика", ("\n".join(result_list)))  # show the statistics dialogue
         else:  # if the vocabulary is empty,
-            showinfo("Statistics", "There are no words in the vocabulary. Add some at first.")  # it is nothing to show
+            showinfo("Статистика", "У словнику поки ще не має слів. Спершу додайте кілька.")  # it is nothing to show
 
     def hide_to_tray(self):
         """
@@ -167,8 +167,8 @@ def show_usage():
     :rtype: none
     """
     Tk().withdraw()  # hide the window (otherwise, an empty window is shown)
-    showerror("Error", "You are trying to run this program in an unusual way."
-                       "\n\nUsage:\nEditor.exe vocabulary.pav")  # displays the error
+    showerror("Error", "Ви намагаєтеся відкрити цю програму якимось дивним чином."
+                       "\n\nВикористання:\nEditor.exe vocabulary.pav")  # displays the error
     os._exit(0)  # terminates the application process
 
 

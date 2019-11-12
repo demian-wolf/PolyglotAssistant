@@ -52,11 +52,10 @@ def about(_event=None):
     :rtype: none
     """
 
-    showinfo("About PolyglotAssistant",
-             "PolyglotAssistant 1.0 (C) Demian Wolf, 2019"
-             "\nLearnWords is an easy way to learn words of foreign language - "
-             "convenient learning plan editor and smart autotrainer."
-             "\nProgram licensed AS-IS\nThank you for using my program!")
+    showinfo("Про PolyglotAssistant",
+             "PolyglotAssistant 1.0 (C) Дем'ян Волков aka Demian Wolf, 2019"
+             "\nPolyglotAssistant - легкий спосіб швидко поповнити свій словниковий запас з іноземної мови!"
+             "\nДякую за використання моєї програми!")
 
 
 def contact_me(_event=None):
