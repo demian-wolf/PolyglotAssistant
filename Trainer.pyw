@@ -160,7 +160,7 @@ class UserLoginWindow(Toplevel):
                                       details.__class__.__name__, details))
             else:  # if there is no "users.dat" in the app path,
                 ulist = {}  # create a new users' dictionary
-            if ulist != None:  # if could open users' list,
+            if ulist is not None:  # if could open users' list,
                 ulist[udata[0]] = {"password": udata[1],
                                    "stats": {}}  # assign new user's name with his password and stats
                 try:  # try to

@@ -194,7 +194,7 @@ class ReadIt(Tk):
                         self.text_filename = filename  # update the text_filename attribute,
                         self.text_opened = True  # text_opened attribute,
                         self.update_title()  # and the title
-                        if self.bookmarks_data != None:  # if the bookmarks.dat was opened without errors),
+                        if self.bookmarks_data is not None:  # if the bookmarks.dat was opened without errors),
                             self.menubar.entryconfig("Bookmarks", state="normal")  # enable "Bookmarks menu"
                             self.update_bookmarks_menu()  # updates the bookmarks menu entries as in the opened file
             except UnicodeDecodeError as details:  # if the file has unsupported encoding,
@@ -414,13 +414,13 @@ class ReadIt(Tk):
         :return: no value
         :rtype: none
         """
-        if self.text_opened and self.bookmarks_data != None:  # if text was opened and bookmarks were not disabled
+        if self.text_opened and self.bookmarks_data is not None:  # if text was opened and bookmarks were not disabled
             result = askyesnocancel("Add bookmark?",
                                     "Do you want to add a bookmark before exit?")  # ask user about adding a bookmark
             if result:  # if he clicks "Yes",
                 self.add_bookmark()  # add a new bookmark,
                 # and then return True
-            elif result == None:  # if he clicks "Cancel",
+            elif result is None:  # if he clicks "Cancel",
                 return False  # do not close the window or open a new text
         return True  # if "Yes" and bookmark were added or "No"
 
