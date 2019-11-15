@@ -192,7 +192,7 @@ class UserLoginWindow(Toplevel):
         if self.userslistbox.curselection():  # if any user is selected,
             selected_user = self.userslistbox.get(self.userslistbox.curselection()[0])  # get selected user's name
             # if deletion was confirmed,
-            if yesno2bool(show_msg("Увага", "Зараз буде видалено кориистувача \"%s\"."
+            if yesno2bool(show_msg("Увага", "Зараз буде видалено кориистувача \"%s\". "
                                             "Ви дійсно бажаєте продовжити?" % selected_user, "warning", "yesno")):
                 if self.pwd_entry.get() == self.users_dict[selected_user]["password"]:  # if the right password entered,
                     del self.users_dict[selected_user]  # delete this user from the users' dict
