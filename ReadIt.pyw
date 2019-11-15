@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 from tkinter import *
 from tkinter.messagebox import askyesnocancel, showerror, _show as show_msg
 from tkinter.filedialog import askopenfilename
@@ -281,7 +283,7 @@ class ReadIt(Tk):
         :return: no value
         :rtype: none
         """
-        self.title("%s - %s - PolyglotAssistant ReadIt 1.0" % (
+        self.title("%s - %s - PolyglotAssistant 1.00 ReadIt" % (
             self.text_filename if self.text_filename else "Untitled",
             self.vocabulary_editor.filename))  # format the title
 

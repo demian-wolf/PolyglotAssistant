@@ -1,8 +1,5 @@
 #!/usr/bin/python3
 
-# (C) Demian Wolf, 2019
-# email: demianwolfssd@gmail.com
-
 from tkinter import *
 from tkinter.messagebox import showinfo, showerror
 import os

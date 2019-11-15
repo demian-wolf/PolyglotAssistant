@@ -374,6 +374,7 @@ class EditorFrame(Frame):
         if state:  # if state == True
             self.saved = True  # set saved attribute to True
             self.unsaved_prefix = ""  # hide the "unsaved" asterisk at the start of the title
+            self.update_totally()
             self.mod_sb["text"] = "Нередаговано"  # update the statusbar value
         else:  # if state == False
             self.saved = False  # set saved attribute to False

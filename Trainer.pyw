@@ -54,7 +54,7 @@ class UserLoginWindow(Toplevel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.title("Login - PolyglotAssistant 1.00 Trainer")  # set title "Login" to the frame
+        self.title("Авторизація - PolyglotAssistant 1.00 Trainer")  # set title "Login" to the frame
         self.protocol("WM_DELETE_WINDOW", self.close)  # when the user closes the window, terminate the whole process
         self.resizable(False, False)  # make the user login window unresizable
         self.after(0, self.focus_force)  # focus to the trainer window on start
@@ -72,7 +72,7 @@ class UserLoginWindow(Toplevel):
         self.scrollbar.grid(row=0, column=6, sticky="ns")  # grid the scrollbar
         self.userslistbox.config(yscrollcommand=self.scrollbar.set)  # configure the users' list
         pwd_frame = Frame(self)  # create frame for the password input
-        Label(pwd_frame, text="Password:").grid(row=0, column=0, sticky="ew")  # a label, which says "Password:"
+        Label(pwd_frame, text="Пароль (якщо є):").grid(row=0, column=0, sticky="ew")  # a label, which says "Password:"
         self.pwd_entry = Entry(pwd_frame, show="●")  # entry for the password
         self.pwd_entry.grid(row=0, column=1, sticky="ew")  # grid the password entry
         self.pwd_entry.bind("<Return>",
@@ -80,10 +80,10 @@ class UserLoginWindow(Toplevel):
         pwd_frame.grid(columnspan=5)  # grid password frame
 
         # Create the buttons
-        Button(self, text="Login as this user", command=self.login_as_this_user).grid(row=2, column=0, sticky="ew")
-        Button(self, text="Add a new user", command=self.add_a_new_user).grid(row=2, column=1, sticky="ew")
-        Button(self, text="Remove this user", command=self.remove_this_user).grid(row=2, column=2, sticky="ew")
-        Button(self, text="Cancel", command=self.close).grid(row=2, column=3, columnspan=2, sticky="ew")
+        Button(self, text="Увійти як обраний", command=self.login_as_this_user).grid(row=2, column=0, sticky="ew")
+        Button(self, text="Додати нового", command=self.add_a_new_user).grid(row=2, column=1, sticky="ew")
+        Button(self, text="Видалити обраного", command=self.remove_this_user).grid(row=2, column=2, sticky="ew")
+        Button(self, text="Вихід", command=self.close).grid(row=2, column=3, columnspan=2, sticky="ew")
 
         self.bind("<Escape>", lambda _event: self.close())  # when the user strokes Escape key, close the window
         self.update_ulist()  # update user list (it is empty)
@@ -114,10 +114,11 @@ class UserLoginWindow(Toplevel):
             if self.pwd_entry.get() == self.users_dict[selected_user]["password"]:  # if the right password is entered
                 self.user.set(selected_user)  # return (see "wait_variable" above) the username of the selected user
             else:  # if the wrong password is entered
-                showerror("Error", "Unfortunately, you entered the wrong password! Try again, please.")
+                showerror("Помилка", "На жаль, ви ввели неправильний пароль. Спробуйте ще раз.")
+                self.focus_force()  # set focus on the window again
         else:
             # if user was not selected, show an appropriate message
-            showinfo("Information", "Choose a user at first. If there is no users in the list, add a new one.")
+            showinfo("Інформація", "Спочатку виберіть користувача. Якщо в списку немає користувачів, додайте одного.")
 
     def add_a_new_user(self):
         """
@@ -133,30 +134,30 @@ class UserLoginWindow(Toplevel):
                 try:  # try to open the users list
                     udat = open("users.dat", "rb")  # users.dat will be opened
                 except FileNotFoundError as details:  # if the "users.dat" file had disappeared from the app directory,
-                    showerror("Error",
-                              "Couldn't open the users.dat file. Check its location. "
-                              "Application will exit now.\n\nDetails: FileNotFoundError (%s)" % details)
+                    showerror("Помилка",
+                              "Не вдалося відкрити users.dat. Перевірте його місцезнаходження. "
+                              "Програму зараз буде закрито.\n\nДеталі: FileNotFoundError (%s)" % details)
                     self.close()  # terminate the program process
                 except PermissionError as details:  # if the access to the file denied
-                    showerror("Error",
-                              "Couldn't open the users.dat file. Check your permissions to read it. "
-                              "Application will exit now.\n\nDetails: PermissionError (%s)" % details)
+                    showerror("Помилка",
+                              "Не вдалося відкрити users.dat. Перевірте ваші права доступу до нього. "
+                              "Програму зараз буде закрито.\n\nДеталі: PermissionError (%s)" % details)
                     self.close()  # terminate the program process
                 except Exception as details:  # if any other problem happened
-                    showerror("Error",
-                              "During opening the users.dat file unexpected error occurred. "
-                              "Application will exit now.\n\nDetails: %s (%s)" % (
+                    showerror("Помилка",
+                              "Під час відкриття users.dat сталася невідома помилка. "
+                              "Програму зараз буде закрито.\n\nДеталі: %s (%s)" % (
                                   details.__class__.__name__, details))
                     self.close()  # terminate the program process
                 else:  # if could open the "users.dat" file,
                     try:  # try to
                         ulist = pickle.load(udat)  # decode it,
                     except (pickle.UnpicklingError, EOFError) as details:  # if it's spoiled, or has unsupported format
-                        showerror("Error",
-                                  "The users.dat is corrupted or has an unsupported format!\n\nDetails: %s" % details)
+                        showerror("Помилка",
+                                  "Файл users.dat пошкоджено. Програму зараз буде закрито.\n\nДеталі: %s" % details)
                     except Exception as details:  # if unexpected error occurred,
-                        showerror("Error",
-                                  "During opening the users.dat unexpected error occurred\n\nDetails: %s (%s)" % (
+                        showerror("Помилка",
+                                  "Під час відкриття users.dat сталася невідома помилка.\n\nДеталі: %s (%s)" % (
                                       details.__class__.__name__, details))
             else:  # if there is no "users.dat" in the app path,
                 ulist = {}  # create a new users' dictionary
@@ -166,10 +167,10 @@ class UserLoginWindow(Toplevel):
                 try:  # try to
                     pickle.dump(ulist, open("users.dat", "wb"))  # dump it all into new "users.dat" file
                 except Exception as details:  # if something went wrong,
-                    while retrycancel2bool(show_msg("Error",
-                                                    "During saving the users.dat file an unexpected error occurred. "
-                                                    "New user was not saved. "
-                                                    "Do you want to retry?\n\nDetails: %s (%s)"
+                    while retrycancel2bool(show_msg("Помилка",
+                                                    "Під час збереження файлу users.dat сталася невідома помилка, "
+                                                    "тому зберегти нового користувача не вдалося. "
+                                                    "Чи не бажаєте повторити спробу?\n\nДеталі: %s (%s)"
                                                     % (details.__class__.__name__, details), icon="error",
                                                     type="retrycancel")):  # ask about retry while the error is going on
                         try:  # try to
@@ -191,8 +192,8 @@ class UserLoginWindow(Toplevel):
         if self.userslistbox.curselection():  # if any user is selected,
             selected_user = self.userslistbox.get(self.userslistbox.curselection()[0])  # get selected user's name
             # if deletion was confirmed,
-            if yesno2bool(show_msg("Warning", "This will permanently delete the user with name \"{}\". "
-                                              "Do you want to continue?".format(selected_user), "warning", "yesno")):
+            if yesno2bool(show_msg("Увага", "Зараз буде видалено кориистувача \"%s\"."
+                                            "Ви дійсно бажаєте продовжити?" % selected_user, "warning", "yesno")):
                 if self.pwd_entry.get() == self.users_dict[selected_user]["password"]:  # if the right password entered,
                     del self.users_dict[selected_user]  # delete this user from the users' dict
                     try:  # try to
@@ -201,12 +202,12 @@ class UserLoginWindow(Toplevel):
                         outf.close()  # close the "users.dat"
                     except PermissionError:
                         # if there is a PermissionError occurred, show an appropriate error.
-                        showerror("Error", "Unable to access the user.dat file. Check your permissions for reading.")
+                        showerror("Помилка", "Не вдалося відкрити users.dat. Перевірте ваші права доступу до нього.")
                     self.update_ulist()  # update the users' list from the "users.dat"
                 else:
-                    showerror("Error", "Enter the right password!")  # if the wrong password was entered, show an error
+                    showerror("Помилка", "Уведіть правильний пароль.")  # if the wrong password was entered, show an error
         else:
-            showinfo("Information", "Choose what to remove at first.")  # if none is selected, show a message
+            showinfo("Інформація", "Спочатку виберіть, що потрібно видалити.")  # if none is selected, show a message
 
     def update_ulist(self):
         """
@@ -220,17 +221,19 @@ class UserLoginWindow(Toplevel):
             try:  # try to:
                 self.users_dict = pickle.load(open("users.dat", "rb"))  # read the users' dict from the pickle
             except PermissionError:  # if you have no permissions to access the "users.dat",
-                showerror("Error", "Couldn't open users.dat. Check your permissions for reading this file and retry.")
+                showerror("Помилка", "Не вдалося відкрити users.dat. Перевірте ваші права доступу до нього.")
                 self.close()  # terminate the process
             except (pickle.UnpicklingError, EOFError) as details:  # if the "users.dat" is damaged,
-                if yesno2bool(show_msg("Error", "The users.dat is damaged. "
-                                                "Do you want to remove it and add new users then?\n\nDetails: %s (%s)" %
+                if yesno2bool(show_msg("Помилка", "Файл users.dat пошкоджено. "
+                                                "Чи не бажаєте видалити його, а потім додати нових користувачів?"
+                                                  "\n\nДеталі: %s (%s)" %
                                                 (details.__class__.__name__, details), "error", "yesno")):
                     try:  # try to
                         os.remove("users.dat")  # remove it (after asking the user)
                     except Exception as details:  # if couldn't remove "users.dat",
-                        showerror("Error", "Couldn't remove the damaged users.dat file.\n\nDetails: %s (%s)" % (
+                        showerror("Помилка", "Не вдалося видалити users.dat.\n\nДеталі: %s (%s)" % (
                             details.__class__.__name__, details))
+                        self.destroy()
                     self.after(0, self.focus_force)  # set focus to the application window
                 else:  # if user canceled the removal,
                     self.close()  # terminate the application process
@@ -238,9 +241,9 @@ class UserLoginWindow(Toplevel):
                 try:  # check
                     validate_users_dict(self.users_dict)  # if the users' dict has valid format
                 except AssertionError:  # if it isn't,
-                    showerror("Error",
+                    showerror("Помилка",
                               "The users.dat is damaged. It'll be removed. Add new users then. "
-                              "\n\nDetails: invalid object is pickled.")
+                              "\n\nДеталі: у файлі було закодовано об'єкт, що не є правильним списком користувачів.")
                     os.remove("users.dat")  # remove the "users.dat" file
                 else:
                     self.userslistbox.insert(END, *self.users_dict.keys())  # if all is OK, insert all users to the list
@@ -248,8 +251,8 @@ class UserLoginWindow(Toplevel):
             # Hide the empty main window (this frame wasn't grid yet)
             self.withdraw()
             # show the message about the first run of the program.
-            showinfo("Information", "Hello, dear user! Probably, this is the first run of this program."
-                                    "\nAt first you need to Add a new user.")
+            showinfo("Інформація", "Привіт, шановний користувачу! Радий вас бачити вперше!"
+                                    "\nСпочатку додайте нового користувача.")
             self.deiconify()  # show the main window now
         self.userslistbox.focus()  # focus on the users' list (to select a user without mouse, only with arrow keys)
         # And now select the first user from the list using .select_set(0) and .activate(0)
@@ -278,23 +281,23 @@ class AddUser(Toplevel):
         self.resizable(False, False)  # make this dialog unresizable
         # TODO: why doesn't it work?
         # self.transient(self.master)  # make it transient from its master (self.master)
-        self.title("Add User")  # set the title of the dialog to "Add User"
+        self.title("Додати користувача")  # set the title of the dialog to "Add User"
         self.grab_set()  # set grab to disable the master window controls while adding a new user
         self.iconbitmap("icon_32x32.ico")  # show the left-top window icon
         self.data = None  # now data is None
-        Label(self, text="Username:").grid(row=0, column=0)  # create label with text "Username:"
+        Label(self, text="Ім'я:").grid(row=0, column=0)  # create label with text "Username:"
         self.username_entry = Entry(self)  # create entry for the username,
         self.username_entry.grid(row=0, column=1)  # grid this entry,
         self.username_entry.focus()  # and focus on it
-        Label(self, text="Password:").grid(row=1, column=0)  # create label with text "Password:"
+        Label(self, text="Пароль:").grid(row=1, column=0)  # create label with text "Password:"
         self.pwd_entry = Entry(self, show="●")  # create entry for the password,
         self.pwd_entry.grid(row=1, column=1)  # grid this entry
         # when the username is entered and the user press "Enter" ("Return") key, Tkinter focus on the password entry
         self.username_entry.bind("<Return>", lambda _event: self.pwd_entry.focus())
         # when both the username and the password are entered, app submits the user's data on "Enter" press
         self.pwd_entry.bind("<Return>", self.ok)
-        Button(self, text="OK", command=self.ok).grid(row=2, column=0, sticky="ew")  # create "OK" button
-        Button(self, text="Cancel", command=self.destroy).grid(row=2, column=1, sticky="ew")  # create "Cancel" button
+        Button(self, text="ОК", command=self.ok).grid(row=2, column=0, sticky="ew")  # create "OK" button
+        Button(self, text="Скасувати", command=self.destroy).grid(row=2, column=1, sticky="ew")  # create "Cancel" button
         self.wait_window()  # doesn't return anything while the window is not destroyed
 
     def ok(self, _event=None):
@@ -305,13 +308,13 @@ class AddUser(Toplevel):
         :return: no value
         """
         if not self.username_entry.get():  # if the user skipped username entry, give him a warning
-            showwarning("Warning", "Cannot create a user without username! Enter a username, please!")
+            showwarning("Увага", "Будь ласка, введіть ім'я користувача!")
             return  # stop this function
         if not self.pwd_entry.get():  # if the user skipped password entry, give him a warning
-            if not yesno2bool(show_msg("Warning",
-                                       "It's highly unrecommended to create users with empty passwords. "
-                                       "Everyone can change your statistics (by doing your exercises) or even remove "
-                                       "your user account at all! Do you want to continue?",
+            if not yesno2bool(show_msg("Увага",
+                                       "Не рекомендується створювати користувачів без паролю. "
+                                       "Оскільки кожен, хто має доступ до цього ПК може змінити вашу статистику або "
+                                       "навіть просто видалити ваш акаунт користувача! Ви дійсно бажаєте продовжити?",
                                        "warning", "yesno")):  # ask the user about continuation
                 return  # and stop the function
         self.data = self.username_entry.get(), self.pwd_entry.get()  # set user's data according to entries' values
@@ -335,7 +338,7 @@ class HomeWindow(Toplevel):
         super().__init__(*args, **kwargs)
 
         self.after(0, self.focus_force)  # set focus on the "Home" window
-        self.title("{} - Home ({}) - PolyglotAssistant 1.00".format("Untitled", user))  # set master window's title
+        self.title("{} - Головна ({}) - PolyglotAssistant 1.00 Trainer".format("Без імені", user))  # set master window's title
         self.protocol("WM_DELETE_WINDOW", self.back)  # when the user tries to close the window, UserLoginWindow opens
 
         # create lists for good, bad, and unknown words  (they're empty while nothing is opened)
@@ -354,17 +357,17 @@ class HomeWindow(Toplevel):
         self.config(menu=self.menubar)  # attach it to the master window
         # Create the "File" menu
         self.filemenu = Menu(self.menubar, tearoff=False)
-        self.filemenu.add_command(label="Open", command=self.open_vocabulary, accelerator="Ctrl+O")
+        self.filemenu.add_command(label="Відкрити", command=self.open_vocabulary, accelerator="Ctrl+O")
         self.filemenu.add_separator()
-        self.filemenu.add_command(label="Select another user", command=lambda: self.back(), accelerator="Alt+F4")
-        self.menubar.add_cascade(label="File", menu=self.filemenu)  # attach the "File" menu to the menubar
+        self.filemenu.add_command(label="Увійти як інший користувач", command=lambda: self.back(), accelerator="Alt+F4")
+        self.menubar.add_cascade(label="Файл", menu=self.filemenu)  # attach the "File" menu to the menubar
         # Create the "Help" menu
         self.helpmenu = Menu(self.menubar, tearoff=False)
-        self.helpmenu.add_command(label="PolyglotAssistant Help", accelerator="F1")
+        self.helpmenu.add_command(label="Виклик допомоги", accelerator="F1")
         self.helpmenu.add_separator()
-        self.helpmenu.add_command(label="About PolyglotAssistant", accelerator="Ctrl+F1")
-        self.helpmenu.add_command(label="Contact me", accelerator="Ctrl+Shift+F1")
-        self.menubar.add_cascade(label="Help", menu=self.helpmenu)  # attach the "Help" menu to the menubar
+        self.helpmenu.add_command(label="Про PolyglotAssistant", accelerator="Ctrl+F1")
+        self.helpmenu.add_command(label="Зв'язатися зі мною", accelerator="Ctrl+Shift+F1")
+        self.menubar.add_cascade(label="Допомога", menu=self.helpmenu)  # attach the "Help" menu to the menubar
 
         self.iconbitmap("icon_32x32.ico")  # show the left-top window icon
 
@@ -375,8 +378,8 @@ class HomeWindow(Toplevel):
 
         # Create and configure a Treeview widget for viewing the words pairs
         self.wtree = Treeview(self, show="headings", columns=["word", "translation"], selectmode=EXTENDED)
-        self.wtree.heading("word", text="Word")  # create the "Word" column
-        self.wtree.heading("translation", text="Translation")  # create the "Translation" column
+        self.wtree.heading("word", text="Слово")  # create the "Word" column
+        self.wtree.heading("translation", text="Переклад")  # create the "Translation" column
         self.wtree.grid(row=0, column=0, columnspan=8, sticky="nsew")  # grid it to the screen
 
         # Create, grid, and configure self.scrollbar
@@ -394,14 +397,15 @@ class HomeWindow(Toplevel):
         self.unknown_label.grid(row=1, column=3, sticky="ew")  # and grid it on the master window
         self.total_label = Label(self, bg="white", relief=RAISED)  # create a label for total quantity of words,
         self.total_label.grid(row=1, column=4, sticky="ew")  # and grid it on the master window
-        Label(self, text="Words per game: ").grid(row=1, column=5, sticky="ew")  # create "Words per game:" label
+        Label(self, text="Слів за гру: ").grid(row=1, column=5, sticky="ew")  # create "Words per game:" label
         self.wpg_var = IntVar(self)  # create variable for quantity of words
         self.wpg_var.set(12)  # set it 12 by default
         self.wpg_spb = Spinbox(self, width=3, from_=1, to_=999, textvariable=self.wpg_var,
-                               validate="all", validatecommand=(self.register(self.validate_wpg), '%P'))
+                               validate="all")
+        self.wpg_spb.configure(validatecommand=(self.register(self.validate_wpg), '%P'))  # set the validate command
         self.wpg_spb.grid(row=1, column=6, sticky="ew")  # create the words per game spinbox
         self.wpg_spb.bind("<Return>", self.start)  # after entering w/g value, the user can press "Enter" to continue
-        Button(self, bg="#add8e6", text="Start! ▶", command=self.start) \
+        Button(self, bg="#add8e6", text="Почати! ▶", command=self.start) \
             .grid(row=1, column=7, columnspan=2, sticky="ew")  # create the "Start" button
 
         # Create keybindings
@@ -433,9 +437,9 @@ class HomeWindow(Toplevel):
             if vocabulary_filename:  # if the vocabulary filename was passed (e.g from command-line),
                 filename = vocabulary_filename  # set the filename to this,
             else:  # if the vocabulary filename was not passed,
-                filename = askopenfilename(filetypes=[("PolyglotAssitant Vocabulary", ".pav")])  # use the "Open" dialog
+                filename = askopenfilename(filetypes=[("Словник PolyglotAssitant", ".pav")])  # use the "Open" dialog
         except Exception as details:  # if something went wrong, show an error message
-            showerror("Error", "Unable to open this file as a vocabulary\n\nDetails: %s (%s)" % (
+            showerror("Помилка", "На жаль, не вдалося відкрити цей словник!\n\nДеталі: %s (%s)" % (
                 details.__class__.__name__, details))
         else:  # if could get filename,
             if filename:  # if the user didn't clicked "Cancel" in the open-file dialog,
@@ -444,23 +448,24 @@ class HomeWindow(Toplevel):
                     self.vocabulary_data = pickle.load(file)  # and try to load the vocabulary from it
                 except pickle.UnpicklingError:
                     # if couldn't unpickle it, show an error message
-                    showerror("Error", "Unable to open the vocabulary!\n\nDetails: invalid vocabulary file")
+                    showerror("Помилка", "На жаль, не вдалося відкрити цей словник!\n\nДеталі: невідомий формат"
+                                         "словнику, або він пошкоджений")
                 except Exception as details:  # if something another went wrong
-                    showerror("Error", "Unable to open this vocabulary!\n\nDetails: %s (%s)" % (
+                    showerror("Помилка", "На жаль, не вдалося відкрити цей словник!\n\nДеталі: %s (%s)" % (
                         details.__class__.__name__, details))
                 else:  # otherwise,
                     try:
                         # validate the unpickled vocabulary data
                         validate_vocabulary_data(self.vocabulary_data)
                     except AssertionError:  # if this vocabulary data is invalid, show an error message
-                        showerror("Error",
-                                  "Unable to open the file!"
-                                  "\n\nDetails: it doesn't looks like a valid learning plan file!")
+                        showerror("Помилка",
+                                  "На жаль, не вдалося відкрити цей словник!"
+                                  "\n\nДеталі: формат цього словника не підтримується!")
                     else:  # if it is a valid learning plan,
                         self.vocabulary_filename = file.name  # and set up the filename attribute
                         self.get_words_list()  # get words list from the learning plan,
-                        self.title("{} - Home ({}) - PolyglotAssistant 1.00".format(self.vocabulary_filename, self.user)
-                                   )  # update the title
+                        self.title("{} - Головна ({}) - PolyglotAssistant 1.00 Trainer".format(
+                            self.vocabulary_filename, self.user))  # update the title
                         vocabulary_len = len(self.vocabulary_data)  # get the vocabulary length
                         if vocabulary_len > 12:  # if it is bigger, than 12,
                             self.wpg_var.set(12)  # set the default words-per-game value to 12
@@ -522,10 +527,10 @@ class HomeWindow(Toplevel):
         good, bad, unknown, total = (len(self.good), len(self.bad), len(self.unknown),
                                      len(self.wtree.get_children())) if self.vocabulary_filename else (
             "?", "?", "?", "?")
-        self.good_label["text"] = "Good: %s" % good
-        self.bad_label["text"] = "Bad: %s" % bad
-        self.unknown_label["text"] = "Unknown: %s" % unknown
-        self.total_label["text"] = "Total: %s" % total
+        self.good_label["text"] = "Добре: %s" % good
+        self.bad_label["text"] = "Погано: %s" % bad
+        self.unknown_label["text"] = "Не треновано: %s" % unknown
+        self.total_label["text"] = "Усього: %s" % total
 
     def validate_wpg(self, P):
         """
@@ -594,10 +599,10 @@ class HomeWindow(Toplevel):
                 udat = open("users.dat", "wb")  # open the users.dat file,
                 pickle.dump(self.users_dict, udat)  # and dump the stats there
             except Exception as details:  # if there is an unexpected problem occurred,
-                while retrycancel2bool(show_msg("Error",
-                                                "During saving the users.dat file an unexpected error occurred. "
-                                                "Statistics were not saved. "
-                                                "Do you want to retry?\n\nDetails: %s (%s)"
+                while retrycancel2bool(show_msg("Помилка",
+                                                "Не вдалося зберегти users.dat через невідому помилку, тому "
+                                                "статистику не збережено. "
+                                                "Чи не бажаєте повторити?\n\nДеталі: %s (%s)"
                                                 % (details.__class__.__name__, details), icon="error",
                                                 type="retrycancel")):  # while the user asks to retry,
                     try:  # try to
@@ -611,9 +616,9 @@ class HomeWindow(Toplevel):
             self.deiconify()  # show the window
             self.after(0, self.focus_force)  # set the focus to the window
         else:  # if nothing opened,
-            showerror("Error",
-                      "Before you start, open your learning plan file."
-                      "\nTo create a new learning plan, create it using Editor")
+            showerror("Помилка",
+                      "Перед тим, як почати, відкрийте словник."
+                      "\nЩоб створити новий словник, використовуйте Editor.")
 
 
 class GymWindow(Toplevel):
@@ -634,7 +639,7 @@ class GymWindow(Toplevel):
         super().__init__(*args, **kwargs)
 
         self.after(0, self.focus_force)  # set the focus on the GymWindow
-        self.title("Gym - PolyglotAssistant 1.00")  # set the master window title
+        self.title("Спортзала - PolyglotAssistant 1.00 Trainer")  # set the master window title
 
         self.iconbitmap("icon_32x32.ico")  # show the left-top window icon
 
@@ -645,6 +650,9 @@ class GymWindow(Toplevel):
         self.score = 0  # the score is 0 at the game start
 
         # Generate the words' pairs list (shuffle all the lists, and then generate a "smart" queue)
+        random.shuffle(bad)
+        random.shuffle(unknown)
+        random.shuffle(good)
         self.queue = (2 * bad + unknown + good)[:wpg]  # create the queue,
         random.shuffle(self.queue)  # and shuffle it
         self.queue += random.sample(reverse_pairs(self.queue), len(self.queue))  # add the reversed pairs to queue
@@ -657,14 +665,14 @@ class GymWindow(Toplevel):
         self.time_pb.grid(row=1, column=0, columnspan=6, sticky="nsew")  # and grid it
         Button(self, text="⏎", command=self.back).grid(row=2, column=0,
                                                        sticky="ew")  # create and grid the "Back" button
-        Label(self, text="Translation: ").grid(row=2, column=1,
+        Label(self, text="Переклад: ").grid(row=2, column=1,
                                                sticky="ew")  # create and grid the "Translation: " label
         self.translation_entry = Entry(self)  # create the translation entry (where the user enters the translation),
         self.translation_entry.grid(row=2, column=2, sticky="ew")  # and grid it
         self.translation_entry.focus()  # focus on this entry
-        self.ok_button = Button(self, text="OK", command=self.ok)  # create the "OK" button
+        self.ok_button = Button(self, text="ОК", command=self.ok)  # create the "OK" button
         self.ok_button.grid(row=2, column=3, sticky="ew")  # grid the "OK" button
-        self.skip_button = Button(self, text="Skip", command=self.skip)  # create the "Skip" button
+        self.skip_button = Button(self, text="Пропустити", command=self.skip)  # create the "Skip" button
         self.skip_button.grid(row=2, column=4, sticky="ew")  # grid the the "Skip" button
         self.score_label = Label(self)  # create a label that displays score value (answered/totally)
         self.score_label.grid(row=2, column=5, sticky="ew")  # show it using grid geometry manager
@@ -691,7 +699,7 @@ class GymWindow(Toplevel):
         else:  # if the queue is empty,
             self.disable_controls()  # disable the controls
             winsound.PlaySound("sound/applause.wav", winsound.SND_ASYNC)  # play the applause sound
-            self.word_label["text"] = "Hooray! You've shot all the words!"  # show the congrats-label instead of a word
+            self.word_label["text"] = "Ура! Ви закінчили тренування!"  # show the congrats-label instead of a word
             self.after(3000, self.back)  # close the Gym
 
     def back(self):
@@ -735,7 +743,7 @@ class GymWindow(Toplevel):
         :return: no value
         :rtype: none
         """
-        if self.is_right_answer() and action == "Timeout!":  # if the answer is right, and the skip is caused by timeout
+        if self.is_right_answer() and action == "Час сплив!":  # if the answer is right, and the skip is caused by timeout
             self.ok()  # submit the word
         else:  # if the answer is wrong,
             self.score += 1  # increase the score by 1
@@ -744,7 +752,7 @@ class GymWindow(Toplevel):
             self.disable_controls()  # disable controls
             winsound.PlaySound("sound/skip.wav", winsound.SND_ASYNC)  # play the skip sound
             self.time_pb.stop()  # stop the progressbar
-            self.word_label["text"] = "Oops! {} \"{}\" <=> \"{}\"".format(action, *self.pair)  # update the word label
+            self.word_label["text"] = "Упс! {} \"{}\" <=> \"{}\"".format(action, *self.pair)  # update the word label
             self.disable_controls()  # disable controls
             # If the pair was not add to bad-known list before, add it now
             if (self.pair not in self.new_bad) and (not tuple(reversed(self.pair)) in self.new_bad):
@@ -768,7 +776,7 @@ class GymWindow(Toplevel):
         :rtype: none
         """
         self.after_cancel(self.tg_after)  # cancel the timer after event
-        self._skip("Skip?")  # and skip the pair as a skip
+        self._skip("Пропуск?")  # and skip the pair as a skip
 
     def timeout(self):
         """
@@ -777,7 +785,7 @@ class GymWindow(Toplevel):
         :return: no value
         :rtype: none
         """
-        self._skip("Timeout!")  # skip the pair as a timeout
+        self._skip("Час сплив!")  # skip the pair as a timeout
 
     def enable_controls(self):
         """
@@ -838,8 +846,8 @@ def show_usage():
     :rtype: none
     """
     Tk().withdraw()  # create and hide the window to avoid the appearance of the blank window on the screen
-    showerror("Error", "You are trying to run this program in an unusual way."
-                       "\n\nUsage:\nTrainer.exe vocabulary.pav")
+    showerror("Помилка", "Ви намагаєтеся запустити цю програму якимось дивним чином."
+                       "\n\nВикористання:\nTrainer.exe vocabulary.pav")
     os._exit(0)  # terminate the process
 
 
