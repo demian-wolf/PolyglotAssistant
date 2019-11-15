@@ -279,8 +279,6 @@ class AddUser(Toplevel):
         super().__init__()
 
         self.resizable(False, False)  # make this dialog unresizable
-        # TODO: why doesn't it work?
-        # self.transient(self.master)  # make it transient from its master (self.master)
         self.title("Додати користувача")  # set the title of the dialog to "Add User"
         self.grab_set()  # set grab to disable the master window controls while adding a new user
         self.iconbitmap("icon_32x32.ico")  # show the left-top window icon

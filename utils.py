@@ -38,7 +38,7 @@ def help_(_event=None):
     :rtype: none
     """
 
-    pass
+    showinfo("Інформація", "Див. manual.pdf")
 
 
 def about(_event=None):
