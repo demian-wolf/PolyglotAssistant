@@ -68,7 +68,7 @@ class Editor(Tk):
         self.helpmenu.add_command(label="Зв'яжіться зі мною", command=contact_me, accelerator="Ctrl+Shift+F1")
         self.menubar.add_cascade(menu=self.helpmenu, label="Допомога")
 
-        self.iconbitmap("icon_32x32.ico")  # show the left-top window icon
+        self.iconbitmap("images/32x32/app_icon.ico")  # show the left-top window icon
 
         # Bind the keybindings
         self.bind("<F1>", help_)
@@ -115,7 +115,7 @@ class Editor(Tk):
         :rtype: none
         """
         self.tray_icon = pystray.Icon("EditorTrayIcon", title="PolyglotAssistant Editor")  # create the tray icon
-        self.tray_icon.icon = Image.open("icon_32x32.ico")  # open the icon using PIL
+        self.tray_icon.icon = Image.open("images/32x32/app_icon.ico")  # open the icon using PIL
         self.tray_icon.menu = pystray.Menu(pystray.MenuItem("Розгорнути", lambda: self.tray_icon.stop(), default=True),
                                            pystray.MenuItem("Вийти", lambda: self.tray_exit()))  # add the menu items
         self.withdraw()  # hide the window

@@ -35,7 +35,7 @@ class Trainer(Tk):
     def __init__(self, vocabulary_filename=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.iconbitmap("icon_32x32.ico")  # show the left-top window icon
+        self.iconbitmap("images/32x32/app_icon.ico")  # show the left-top window icon
         self.withdraw()  # hide this empty window (there are Toplevels to display something)
         ul_window = UserLoginWindow()  # create a toplevel for user logging
         if ul_window.user.get():  # if user is logged in,
@@ -59,7 +59,7 @@ class UserLoginWindow(Toplevel):
         self.resizable(False, False)  # make the user login window unresizable
         self.after(0, self.focus_force)  # focus to the trainer window on start
 
-        self.iconbitmap("icon_32x32.ico")  # show the left-top window icon
+        self.iconbitmap("images/32x32/app_icon.ico")  # show the left-top window icon
 
         self.user = StringVar(self)  # create variable for username
         self.user.set("")  # now username is empty, and it stays empty if user won't log in.
@@ -281,7 +281,7 @@ class AddUser(Toplevel):
         self.resizable(False, False)  # make this dialog unresizable
         self.title("Додати користувача")  # set the title of the dialog to "Add User"
         self.grab_set()  # set grab to disable the master window controls while adding a new user
-        self.iconbitmap("icon_32x32.ico")  # show the left-top window icon
+        self.iconbitmap("images/32x32/app_icon.ico")  # show the left-top window icon
         self.data = None  # now data is None
         Label(self, text="Ім'я:").grid(row=0, column=0)  # create label with text "Username:"
         self.username_entry = Entry(self)  # create entry for the username,
@@ -367,7 +367,7 @@ class HomeWindow(Toplevel):
         self.helpmenu.add_command(label="Зв'язатися зі мною", accelerator="Ctrl+Shift+F1")
         self.menubar.add_cascade(label="Допомога", menu=self.helpmenu)  # attach the "Help" menu to the menubar
 
-        self.iconbitmap("icon_32x32.ico")  # show the left-top window icon
+        self.iconbitmap("images/32x32/app_icon.ico")  # show the left-top window icon
 
         # Configure widgets' weight (to let them stretch)
         self.rowconfigure(0, weight=1)
@@ -639,7 +639,7 @@ class GymWindow(Toplevel):
         self.after(0, self.focus_force)  # set the focus on the GymWindow
         self.title("Спортзала - PolyglotAssistant 1.00 Trainer")  # set the master window title
 
-        self.iconbitmap("icon_32x32.ico")  # show the left-top window icon
+        self.iconbitmap("images/32x32/app_icon.ico")  # show the left-top window icon
 
         self.tg_after = None  # set the future after timer event to None (before it is created)
         # Create two sets - for good and bad words
@@ -690,9 +690,9 @@ class GymWindow(Toplevel):
             self.translation_entry.delete(0, END)  # clear it
             self.pair = self.queue.pop(0)  # get the pair from the queue
             self.word_label["text"] = self.pair[0]  # show the pair source
-            self.time_pb.start(300)  # start the time progress bar with the 300ms interval
-            # after the 29.9 seconds; not 30 seconds - the progressbar restarts then
-            self.tg_after = self.after(29900, self.timeout)
+            self.time_pb.start(100)  # start the time progress bar with the 100ms interval
+            # after the 9.9 seconds; not 10 seconds - the progressbar restarts then
+            self.tg_after = self.after(9900, self.timeout)
             self.enable_controls()  # enable the controls
         else:  # if the queue is empty,
             self.disable_controls()  # disable the controls

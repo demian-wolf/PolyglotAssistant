@@ -4,13 +4,17 @@ from tkinter import *
 from tkinter.messagebox import askyesnocancel, showerror, _show as show_msg
 from tkinter.filedialog import askopenfilename
 from tkinter.ttk import Combobox, Scrollbar, Entry
+from io import BytesIO
 import _tkinter
 import functools
+import threading
 import pickle
 import os
 import sys
 
 import googletrans
+import gtts
+import pygame
 
 from EditorFrame import EditorFrame
 from utils import yesno2bool, retrycancel2bool, help_, about, contact_me
@@ -37,6 +41,7 @@ class ReadIt(Tk):
         # Set the default text filename, when the text was not opened
         self.text_filename = "Не відкрито"
 
+        self.withdraw()
         self.protocol("WM_DELETE_WINDOW", self.exit)  # call the self.exit function when user exits
 
         self.LANGS_LIST = {value.lower(): key for key, value in
@@ -85,7 +90,7 @@ class ReadIt(Tk):
         self.helpmenu.add_command(label="Зв'яжіться зі мною", command=contact_me, accelerator="Ctrl+Shift+F1")
         self.menubar.add_cascade(menu=self.helpmenu, label="Допомога")  # attach it to the menubar
 
-        self.iconbitmap("icon_32x32.ico")  # show the left-top window icon
+        self.iconbitmap("images/32x32/app_icon.ico")  # show the left-top window icon
 
         # let the widgets stretch using grid_columnconfigure method
         self.grid_columnconfigure(0, weight=1)
@@ -121,20 +126,32 @@ class ReadIt(Tk):
         word_entry = Entry(askword_frame, textvariable=self.word_variable)  # create an entry to enter the word
         word_entry.grid(row=0, column=1, sticky="we")  # create the Entry to enter the words
         word_entry.bind("<Return>", self.translate_word)  # it translates words when you press Enter key
-        Button(askword_frame, text="↻", command=self.translate_word).grid(row=0,
-                                                                          column=2)  # create the "Translate" button
+
         Label(askword_frame, text="Переклад:").grid(row=1, column=0)  # create the "Translation: " label
-        translate_entry = Entry(askword_frame, textvariable=self.translation_variable
-                                )  # create the Entry to show (and edit before adding into vocabulary) the translation
+        self.translate_cbox = Combobox(askword_frame, textvariable=self.translation_variable
+                                       )  # create to show (and edit before adding into vocabulary) the translation
         # Create an Entry to show (and modify before adding to the vocabulary) the translations
-        translate_entry.grid(row=1, column=1, sticky="we")
+        self.translate_cbox.grid(row=1, column=1, sticky="we")
         # it adds a words' pair to the dict when you press Enter key
-        translate_entry.bind("<Return>",
+        self.translate_cbox.bind("<Return>",
                              lambda _event=None: self.vocabulary_editor.add_elem((self.word_variable.get(),
                                                                                   self.translation_variable.get())))
+        controls_frame = Frame(askword_frame)
+        controls_frame.grid(row=0, column=2, rowspan=2)
+        Button(controls_frame, text="↻", command=self.translate_word).grid(row=0,
+                                                                          column=1)  # create the "Translate" button
+        self.speaker_img = PhotoImage(file="images/16x16/speaker.png")  # load the image for the speaker icon
+        # Create two buttons to speak both the word and its translation
+        Button(controls_frame, image=self.speaker_img, command=self.speak_word).grid(row=0, column=2)
+        Button(controls_frame, image=self.speaker_img, command=self.speak_translation).grid(row=1, column=2)
+
+        # Create the label to show the check mark if the translation is checked by community
+        self.checked_label = Label(controls_frame, fg="green")
+        self.checked_label.grid(row=1, column=0)
+
         # Create the button to add the current word to the vocabulary
-        Button(askword_frame, text="➕", command=lambda: self.vocabulary_editor.add_elem(
-            (self.word_variable.get(), self.translation_variable.get()))).grid(row=1, column=2)
+        Button(controls_frame, text="➕", command=lambda: self.vocabulary_editor.add_elem(
+            (self.word_variable.get(), self.translation_variable.get()))).grid(row=1, column=1)
         self.grid_rowconfigure(4, weight=1)  # configure the 5-th row's widgets stretch
         self.vocabulary_editor.grid(row=4, column=2, columnspan=3,
                                     sticky="nswe")  # show the vocabulary editor's frame using grid geometry manager
@@ -156,13 +173,13 @@ class ReadIt(Tk):
         except FileNotFoundError:  # if the bookmarks.dat file doesn't present in the program directory
             self.bookmarks_data = {}  # bookmarks_data is an empty dict, where user can add bookmarks
         except Exception as details:  # if there is another problem,
-            self.withdraw()  # hide the window
             showerror("Помилка",
                       "Не вдалося завантажити список закладок, "
                       "тому ви не зможете користуватися закладками під час цієї сессії."
                       "\n\nДеталі: %s (%s)" % (details.__class__.__name__, details))  # show the appropriate message
             self.deiconify()  # show the window again
 
+        self.deiconify()
         # if opening some files using command-line
         if text_filename:  # if the text was specified,
             self.open_text(text_filename=text_filename)  # open it
@@ -221,14 +238,27 @@ class ReadIt(Tk):
                     src = self.LANGS_LIST[src]  # get the source language ISO 639-1 representation
                 dest = self.LANGS_LIST[self.dest_cbox.get().lower()]  # get the final language
                 result = googletrans.Translator().translate(origin, dest,
-                                                            src).text  # translate using the Google Translator API
-                self.translation_variable.set(result)  # update the translation variable
+                                                            src)  # translate using the Google Translator API
+                self.translation_variable.set(result.text)  # update the translation variable with translation
+                self.checked_label.configure(text="✔" if result.extra_data["translation"][0][4] else "")
+                new_translations_list = []
+                if result.extra_data["all-translations"]:
+                    for group in result.extra_data["all-translations"]:
+                        for translation in group[1]:
+                            new_translations_list.append(translation)
+                    if result.text not in new_translations_list:
+                        new_translations_list.insert(0, result.text)
+                else:
+                    new_translations_list.append(result.text)
+                self.translate_cbox.configure(values=new_translations_list)
             except Exception as details:  # if something went wrong,
                 showerror("Помилка",
                           "Не вдалося перекласти слово. Перевірте доступ до мережі Інтернет!\n\nДеталі: %s (%s)" % (
                               details.__class__.__name__, details))
         else:  # if nothing was entered,
             self.translation_variable.set("")  # clear the translation variable
+            self.translate_cbox.configure(value=())
+            self.checked_label.configure(text="")
 
     def replace_langs(self):
         """Replaces the languages.
@@ -254,6 +284,34 @@ class ReadIt(Tk):
             self.replace_btn.configure(state="disabled")  # it is disabled,
         else:  # when it's not,
             self.replace_btn.configure(state="normal")  # it is enabled
+
+    def _speak(self, text, lang):
+        if text:
+            tmp_file = BytesIO()
+            gtts.gTTS(text, lang).write_to_fp(tmp_file)
+            tmp_file.seek(0)
+            pygame.mixer.init()
+            pygame.mixer.music.load(tmp_file)
+            pygame.mixer.music.play()
+        self.config(cursor="")
+
+    def speak_word(self):
+        self.config(cursor="watch")
+        src = self.src_cbox.get().lower()  # get the source language
+        if src == "auto":  # if it is not "auto",
+            src = googletrans.Translator().detect(self.word_variable.get()).lang
+        else:
+            src = self.LANGS_LIST[src]  # get the source language ISO 639-1 representation
+        threading.Thread(target=lambda: self._speak(self.word_variable.get(), src)).start()
+
+    def speak_translation(self):
+        self.config(cursor="watch")
+        dest = self.dest_cbox.get().lower()  # get the source language
+        if dest == "auto":  # if it is not "auto",
+            dest = googletrans.Translator().detect(self.translation_variable.get()).lang
+        else:
+            dest = self.LANGS_LIST[dest]  # get the source language ISO 639-1 representation
+        threading.Thread(target=lambda: self._speak(self.translation_variable.get(), dest)).start()
 
     def select_and_translate(self, event):
         """
