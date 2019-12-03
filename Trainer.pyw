@@ -21,6 +21,7 @@ import sys
 from utils import yesno2bool, retrycancel2bool, validate_users_dict, validate_vocabulary_data, reverse_pairs, help_, \
     about, contact_me, tidy_stats
 
+# TODO: focus after help, about and contact_me
 
 class Trainer(Tk):
     """
@@ -361,10 +362,10 @@ class HomeWindow(Toplevel):
         self.menubar.add_cascade(label="Файл", menu=self.filemenu)  # attach the "File" menu to the menubar
         # Create the "Help" menu
         self.helpmenu = Menu(self.menubar, tearoff=False)
-        self.helpmenu.add_command(label="Виклик допомоги", accelerator="F1")
+        self.helpmenu.add_command(label="Виклик допомоги", command=help_, accelerator="F1")
         self.helpmenu.add_separator()
-        self.helpmenu.add_command(label="Про PolyglotAssistant", accelerator="Ctrl+F1")
-        self.helpmenu.add_command(label="Зв'язатися зі мною", accelerator="Ctrl+Shift+F1")
+        self.helpmenu.add_command(label="Про PolyglotAssistant", command=about, accelerator="Ctrl+F1")
+        self.helpmenu.add_command(label="Зв'язатися зі мною", command=contact_me, accelerator="Ctrl+Shift+F1")
         self.menubar.add_cascade(label="Допомога", menu=self.helpmenu)  # attach the "Help" menu to the menubar
 
         self.iconbitmap("images/32x32/app_icon.ico")  # show the left-top window icon

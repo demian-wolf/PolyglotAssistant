@@ -305,6 +305,7 @@ class ReadIt(Tk):
         threading.Thread(target=lambda: self._speak(self.word_variable.get(), src)).start()
 
     def speak_translation(self):
+        # TODO: do not hang
         self.config(cursor="watch")
         dest = self.dest_cbox.get().lower()  # get the source language
         if dest == "auto":  # if it is not "auto",
