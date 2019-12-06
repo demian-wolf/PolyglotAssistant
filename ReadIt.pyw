@@ -8,6 +8,7 @@ from io import BytesIO
 import _tkinter
 import functools
 import threading
+import requests
 import pickle
 import os
 import sys
@@ -106,9 +107,14 @@ class ReadIt(Tk):
 
         # Create the label with the toolbar caption and show it using grid geometry manager
         Label(self, text="Панель перекладача").grid(row=0, column=2, columnspan=3, sticky="nswe")
+        self.src_var = StringVar(self)
+        self.dest_var = StringVar(self)
+        # TODO: check if this is really needed
+        self.src_var.trace("w", lambda *args: self.textbox.focus_force())
+        self.dest_var.trace("w", lambda *args: self.textbox.focus_force())
         self.src_cbox = Combobox(self, values=["Auto"] + [name.capitalize() for name in self.LANGS_LIST.keys()],
-                                 state="readonly")  # create and configure the combobox for the source language
-        self.src_cbox.set("Auto")  # set its default language to "Auto"
+                                 state="readonly", textvariable=self.src_var)  # create and configure the combobox for the source language
+        self.src_var.set("Auto")  # set its default language to "Auto"
         self.src_cbox.grid(row=2, column=2)  # show it using grid geometry manager
         self.src_cbox.bind("<<ComboboxSelected>>",
                            self.update_replace_btn)  # and bind the function, that updates "Replace Langs" button, to it
@@ -116,8 +122,8 @@ class ReadIt(Tk):
                                   command=self.replace_langs)  # create the "Replace Languages" button,
         self.replace_btn.grid(row=2, column=3)  # and show it using grid geometry manager
         self.dest_cbox = Combobox(self, values=[name.capitalize() for name in self.LANGS_LIST.keys()],
-                                  state="readonly")  # create the combobox for the final language,
-        self.dest_cbox.set("Ukrainian")  # set its default language to "Ukrainian",
+                                  state="readonly", textvariable=self.dest_var)  # create the combobox for the final language,
+        self.dest_var.set("Ukrainian")  # set its default language to "Ukrainian",
         self.dest_cbox.grid(row=2, column=4)  # and show it using grid geometry manager
         askword_frame = Frame(self)  # create the frame for the word and translation
         askword_frame.grid(row=3, column=2, columnspan=3, sticky="we")  # and show it using grid geometry manager
@@ -305,14 +311,23 @@ class ReadIt(Tk):
         threading.Thread(target=lambda: self._speak(self.word_variable.get(), src)).start()
 
     def speak_translation(self):
-        # TODO: do not hang
+        # TODO: set cursor back even after an error
         self.config(cursor="watch")
         dest = self.dest_cbox.get().lower()  # get the source language
         if dest == "auto":  # if it is not "auto",
             dest = googletrans.Translator().detect(self.translation_variable.get()).lang
         else:
             dest = self.LANGS_LIST[dest]  # get the source language ISO 639-1 representation
-        threading.Thread(target=lambda: self._speak(self.translation_variable.get(), dest)).start()
+        # TODO: catch errors in thread
+        # TODO: specify what lang is not supported
+        try:
+            threading.Thread(target=lambda: self._speak(self.translation_variable.get(), dest)).start()
+        except ValueError:
+            showerror("Помилка", "Озвучування для обраної мови %s не підтримується Google Перекладачем.")
+        except requests.exceptions.ConnectionError as details:
+            showerror("Помилка", "Не вдалося перекласти слово через проблеми з доступом до мережі Інтернет." % (details.__class__, details))
+        except Exception as details:
+            showerror("Помилка", "Сталася невідома помилка.\n\nДеталі: %s (%s)" % (details.__class__, details))
 
     def select_and_translate(self, event):
         """
@@ -324,7 +339,7 @@ class ReadIt(Tk):
         :rtype: none
         """
         try:  # if there is something selected (for phrases mostly),
-            self.word_variable.set(self.textbox.selection_get())  # set the word to be translated to the selection,
+            self.word_variable.set(self.textbox.get(SEL_FIRST, SEL_LAST))  # set the word to be translated to the selection,
             self.translate_word()  # translate the selected word/phrase
             self.textbox.tag_remove("sel", "1.0", "end")  # deselect all the text
         except _tkinter.TclError:  # if nothing is selected (words only; by right-click)
@@ -343,8 +358,8 @@ class ReadIt(Tk):
         :rtype: none
         """
         self.title("%s - %s - PolyglotAssistant 1.00 ReadIt" % (
-            self.text_filename if self.text_filename else "Untitled",
-            self.vocabulary_editor.filename))  # format the title
+            self.text_filename,
+            self.vocabulary_editor.unsaved_prefix + self.vocabulary_editor.filename))  # format the title
 
     def add_bookmark(self):
         """

@@ -27,8 +27,8 @@ class Editor(Tk):
 
         self.tray_icon = None  # create the tray_icon attribute (will be changed when the application is hidden to tray)
 
-        self.protocol("WM_DELETE_WINDOW", self.hide_to_tray)  # ask yes/no/cancel before exit
-
+        self.protocol("WM_DELETE_WINDOW", self.hide_to_tray)  # hides to tray when user closes the window
+        
         # Configure rows and columns to let the widgets stretch
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
@@ -51,7 +51,7 @@ class Editor(Tk):
         self.filemenu.add_command(label="Статистика", command=self.statistics)
         self.filemenu.add_separator()
         self.filemenu.add_command(label="Сховати до трею", command=self.hide_to_tray)
-        self.filemenu.add_command(label="Вихід", command=self.exit_, accelerator="Alt+F4")
+        self.filemenu.add_command(label="Вихід", command=self.exit, accelerator="Alt+F4")
         self.menubar.add_cascade(menu=self.filemenu, label="Файл")
         # Create the "Edit" menu and add the appropriate entries
         self.editmenu = Menu(self.menubar, tearoff=False)
@@ -107,10 +107,12 @@ class Editor(Tk):
         else:  # if the vocabulary is empty,
             showinfo("Статистика", "У словнику поки ще не має слів. Спершу додайте кілька.")  # it is nothing to show
 
-    def hide_to_tray(self):
+    def hide_to_tray(self, _event=None):
         """
         Hides the application to the tray.
 
+        :param _event: the unused Tkinter event
+        :type _event: tkinter.Event
         :return: no value
         :rtype: none
         """
@@ -132,9 +134,9 @@ class Editor(Tk):
         :rtype: none
         """
         self.tray_icon.stop()  # stop the tray icon mainloop
-        self.after(0, self.exit_)  # exit from the application
+        self.after(0, self.exit)  # exit from the application
 
-    def exit_(self):
+    def exit(self):
         """
         Exits the application.
 
