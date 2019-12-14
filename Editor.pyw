@@ -9,9 +9,10 @@ from PIL import Image
 import pystray
 
 from EditorFrame import EditorFrame
+from Hotkeys import HKManager
 from utils import help_, about, contact_me
 
-
+# TODO: hide to tray on Esc keypress, and exit on "X" button press
 class Editor(Tk):
     """
     The Editor's main class.
@@ -32,7 +33,7 @@ class Editor(Tk):
         # Configure rows and columns to let the widgets stretch
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
-
+        self.hk_man = HKManager(self)  # create the hotkeys manager
         # Create the vocabulary editor
         self.vocabulary_editor = EditorFrame()  # create the vocabulary_-editor
         self.vocabulary_editor.grid(sticky="nswe")  # show it using grid geometry manager
@@ -74,11 +75,10 @@ class Editor(Tk):
         self.bind("<F1>", help_)
         self.bind("<Control-F1>", about)
         self.bind("<Control-Shift-F1>", contact_me)
-        for key in ("NOS", "nos"):  # process every key
-            self.bind("<Control-%s>" % key[0], self.vocabulary_editor.new)
-            self.bind("<Control-%s>" % key[1], self.vocabulary_editor.open)
-            self.bind("<Control-%s>" % key[2], self.vocabulary_editor.save)
-            self.bind("<Control-Shift-%s>" % key[2], self.vocabulary_editor.save_as)
+        self.hk_man.add_binding("<Control-N>", self.vocabulary_editor.new)
+        self.hk_man.add_binding("<Control-O>", self.vocabulary_editor.open)
+        self.hk_man.add_binding("<Control-S>", self.vocabulary_editor.save)
+        self.hk_man.add_binding("<Control-Shift-S>", self.vocabulary_editor.save_as)
 
         if vocabulary_filename:  # if a file was specified in command-line,
             self.vocabulary_editor.open(vocabulary_filename=vocabulary_filename)  # open the vocabulary

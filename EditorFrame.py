@@ -5,6 +5,7 @@ from tkinter.ttk import Treeview, Entry, Scrollbar
 
 import pickle
 
+from Hotkeys import HKManager
 from utils import yesno2bool, validate_vocabulary_data
 
 
@@ -51,11 +52,13 @@ class EditorFrame(Frame):
         self.unsaved_prefix = None  # unsaved prefix is not defined
         self.filename = "Без імені"  # the default filename is "Untitled"
 
-        # Configuring the hotkeys (English only)
-        for key in ("AET", "aet"):  # bind keys with letters to work with both UPPERCASE and lowercase English keys
-            self.master.bind("<Control-%s>" % key[0], self.select_all)
-            self.master.bind("<Control-Alt-%s>" % key[0], self.add)
-            self.master.bind("<Control-Alt-%s>" % key[1], self.edit)
+        # Configure the hotkeys
+        self.hk_man = self.master.hk_man  # TODO: find another solution
+        self.hk_man.add_binding("<Control-A>", self.select_all)
+        self.hk_man.add_binding("<Control-Alt-A>", self.add)
+        self.hk_man.add_binding("<Control-Alt-E>", self.edit)
+        self.hk_man.add_binding("<Control-Alt-T>", self.train_now)
+        # TODO: don't be overriden
 
         self.master.bind("<Alt-Delete>", self.remove)
         self.master.bind("<Shift-Delete>", self.clear)
@@ -302,6 +305,10 @@ class EditorFrame(Frame):
                 self.set_saved(False)  # set state to unsaved
         else:  # if there aren't any words in vocabulary,
             showinfo("Інформація", "Цей словник порожній. Можливо ви вже його очистили?")
+    # TODO: remove _event=None from inappropriate places
+
+    def train_now(self, _event=None):
+        pass
 
     def select_all(self, _event=None):
         """
@@ -323,9 +330,12 @@ class EditorFrame(Frame):
         :return: no value
         :rtype: none
         """
-        first_item = self.wtree.get_children()[0]  # get the first item of the words' list
-        self.wtree.selection_set(first_item)  # set the selection to it
-        self.wtree.yview_moveto(0)  # scroll to the start of the words' list (by Y)
+
+        wtree_children = self.wtree.get_children()
+        if wtree_children:
+            first_item = wtree_children[0]  # get the first item of the words' list
+            self.wtree.selection_set(first_item)  # set the selection to it
+            self.wtree.yview_moveto(0)  # scroll to the start of the words' list (by Y)
 
     def select_last(self, _event=None):
         """
@@ -336,9 +346,12 @@ class EditorFrame(Frame):
         :return: no value
         :rtype: none
         """
-        last_item = self.wtree.get_children()[-1]  # get the last item of the words' list
-        self.wtree.selection_set(last_item)  # set the selection to it
-        self.wtree.yview_moveto(1)  # scroll to the end of the words' list (by Y)
+
+        wtree_children = self.wtree.get_children()
+        if wtree_children:
+            last_item = wtree_children[-1]  # get the last item of the words' list
+            self.wtree.selection_set(last_item)  # set the selection to it
+            self.wtree.yview_moveto(1)  # scroll to the end of the words' list (by Y)
 
     def page_up(self, _event=None):
         """

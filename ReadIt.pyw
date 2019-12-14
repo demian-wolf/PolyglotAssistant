@@ -18,6 +18,7 @@ import gtts
 import pygame
 
 from EditorFrame import EditorFrame
+from Hotkeys import HKManager
 from utils import yesno2bool, retrycancel2bool, help_, about, contact_me
 
 
@@ -48,6 +49,9 @@ class ReadIt(Tk):
         self.LANGS_LIST = {value.lower(): key for key, value in
                            googletrans.LANGUAGES.items()
                            }  # create a constant for the languages names in English and their ISO 639-1 codes
+
+        self.hk_man = HKManager(self)
+
         # Create the variables for word and translation
         self.word_variable = StringVar(self)  # create a variable for word to translate
         self.translation_variable = StringVar(self)  # create a variable for translation
