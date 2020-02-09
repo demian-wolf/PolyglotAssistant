@@ -18,10 +18,11 @@ import pickle
 import os
 import sys
 
+from Hotkeys import HKManager
 from utils import yesno2bool, retrycancel2bool, validate_users_dict, validate_vocabulary_data, reverse_pairs, help_, \
     about, contact_me, tidy_stats
 
-# TODO: focus after help, about and contact_me
+# TODO: focus after help, about and contact_me; when user was (or was not) deleted
 
 class Trainer(Tk):
     """
@@ -351,6 +352,8 @@ class HomeWindow(Toplevel):
         self.vocabulary_data = None  # while nothing is opened, vocabulary data is none
         self.vocabulary_filename = vocabulary_filename  # get .pav filename
 
+        self.hk_man = HKManager(self)
+
         # Create menus
         self.menubar = Menu(self.master, tearoff=False)  # create the menubar at the top of the window
         self.config(menu=self.menubar)  # attach it to the master window
@@ -411,8 +414,7 @@ class HomeWindow(Toplevel):
         self.bind("<F1>", help_)
         self.bind("<Control-F1>", about)
         self.bind("<Control-Shift-F1>", contact_me)
-        for key in ("O", "o"):
-            self.bind("<Control-%s>" % key, self.open_vocabulary)
+        self.hk_man.add_binding("<Control-O>", self.open_vocabulary)
 
         self.update_stats()  # get stats for this user
         self.get_words_list()  # get words' list
