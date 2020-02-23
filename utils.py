@@ -52,7 +52,7 @@ def about(_event=None):
     """
 
     showinfo("Про PolyglotAssistant",
-             "PolyglotAssistant 1.00 (C) Дем'ян Волков aka Demian Wolf, 2019"
+             "PolyglotAssistant 1.00 (C) Дем'ян Волков aka Demian Wolf, 2019-2020"
              "\nPolyglotAssistant - легкий спосіб швидко поповнити свій словниковий запас з іноземної мови!"
              "\nДякую за використання моєї програми!")
 

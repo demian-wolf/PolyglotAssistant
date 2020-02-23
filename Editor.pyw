@@ -13,6 +13,8 @@ from Hotkeys import HKManager
 from utils import help_, about, contact_me
 
 # TODO: hide to tray on Esc keypress, and exit on "X" button press
+# TODO: replace Buttons with ttk.Buttons
+
 class Editor(Tk):
     """
     The Editor's main class.

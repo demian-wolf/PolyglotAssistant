@@ -3,11 +3,10 @@
 from tkinter import *
 from tkinter.messagebox import askyesnocancel, showerror, _show as show_msg
 from tkinter.filedialog import askopenfilename
-from tkinter.ttk import Combobox, Scrollbar, Entry
+from tkinter.ttk import Combobox, Scrollbar, Entry, Button, Style
 from io import BytesIO
 import _tkinter
 import functools
-import threading
 import requests
 import pickle
 import os
@@ -24,7 +23,6 @@ lang = "ua"
 exec("from lang.%s import *" % lang)
 
 # TODO: fix encoding for the .txt books
-# TODO: fix bug when clicking on the textfield if there is no any text under cursor (NoneType returned insted of "") - it must be ignored then
 
 class ReadIt(Tk):
     """
@@ -60,6 +58,9 @@ class ReadIt(Tk):
         self.translation_variable = StringVar(self)  # create a variable for translation
 
         self.vocabulary_editor = EditorFrame(self)  # create a frame for the embedded vocabulary editor
+
+        self.style = Style()
+        self.style.configure("Square.TButton", width=2, height=1)
 
         # Create the menus
         self.menubar = Menu(self)  # create the main menu
@@ -125,7 +126,7 @@ class ReadIt(Tk):
         self.src_cbox.grid(row=2, column=2)  # show it using grid geometry manager
         self.src_cbox.bind("<<ComboboxSelected>>",
                            self.update_replace_btn)  # and bind the function, that updates "Replace Langs" button, to it
-        self.replace_btn = Button(self, text="⮂", state="disabled",
+        self.replace_btn = Button(self, style="Square.TButton", text="⮂", state="disabled",
                                   command=self.replace_langs)  # create the "Replace Languages" button,
         self.replace_btn.grid(row=2, column=3)  # and show it using grid geometry manager
         self.dest_cbox = Combobox(self, values=[name.capitalize() for name in self.LANGS_LIST.keys()],
@@ -149,9 +150,10 @@ class ReadIt(Tk):
         self.translate_cbox.bind("<Return>",
                              lambda _event=None: self.vocabulary_editor.add_elem((self.word_variable.get(),
                                                                                   self.translation_variable.get())))
+
         controls_frame = Frame(askword_frame)
         controls_frame.grid(row=0, column=2, rowspan=2)
-        Button(controls_frame, text="↻", command=self.translate_word).grid(row=0,
+        Button(controls_frame, style="Square.TButton", text="↻", command=self.translate_word).grid(row=0,
                                                                           column=1)  # create the "Translate" button
         self.speaker_img = PhotoImage(file="images/16x16/speaker.png")  # load the image for the speaker icon
         # Create two buttons to speak both the word and its translation
@@ -163,7 +165,7 @@ class ReadIt(Tk):
         self.checked_label.grid(row=1, column=0)
 
         # Create the button to add the current word to the vocabulary
-        Button(controls_frame, text="➕", command=lambda: self.vocabulary_editor.add_elem(
+        Button(controls_frame, style="Square.TButton", text="➕", command=lambda: self.vocabulary_editor.add_elem(
             (self.word_variable.get(), self.translation_variable.get()))).grid(row=1, column=1)
         self.grid_rowconfigure(4, weight=1)  # configure the 5-th row's widgets stretch
         self.vocabulary_editor.grid(row=4, column=2, columnspan=3,
@@ -208,15 +210,14 @@ class ReadIt(Tk):
         """
         if self.can_be_closed():  # if the user confirms the text closing,
             try:  # try to
-                if text_filename:  # if a text file was specified in command line,
+                if text_filename:  # if a text file was specified in the command line,
                     filename = text_filename  # set its filename as specified
                 else:  # if opening from the ReadIt,
                     filename = askopenfilename()  # get the filename
                 if filename:  # if user didn't click "Cancel" button or closed the dialog for opening the file
-                    with open(filename, encoding="utf-8") as file:  # open the file for reading,
-                        data = file.read()  # read it
-                        self.textbox.delete("0.0", "end")  # clear the textbox (won't work if couldn't open the file),
-                        self.textbox.insert("0.0", data)  # and insert the data from the new file
+                    with open(filename, "r") as file:  # open the file for reading,
+                        self.textbox.delete("1.0", "end")  # clear the textbox (won't work if couldn't open the file),
+                        self.textbox.insert("1.0", file.read())  # and insert the data from the new file
                         self.text_filename = filename  # update the text_filename attribute,
                         self.text_opened = True  # text_opened attribute,
                         self.update_title()  # and the title
@@ -238,7 +239,8 @@ class ReadIt(Tk):
         :return: no value
         :rtype: none
         """
-        origin = self.word_variable.get()  # get the origin word
+
+        origin = self.word_variable.get().strip()  # get the origin word and remove whitespace characters from ends
         if origin:  # if something is entered,
             try:  # try to
                 src = self.src_cbox.get().lower()  # get the source language
@@ -246,7 +248,7 @@ class ReadIt(Tk):
                     src = self.LANGS_LIST[src]  # get the source language ISO 639-1 representation
                 dest = self.LANGS_LIST[self.dest_cbox.get().lower()]  # get the final language
                 result = googletrans.Translator().translate(origin, dest,
-                                                            src)  # translate using the Google Translator API
+                                                        src)  # translate using the Google Translator API
                 self.translation_variable.set(result.text)  # update the translation variable with translation
                 self.checked_label.configure(text="✔" if result.extra_data["translation"][0][4] else "")
                 new_translations_list = []
@@ -260,16 +262,17 @@ class ReadIt(Tk):
                     new_translations_list.append(result.text)
                 self.translate_cbox.configure(values=new_translations_list)
             except requests.exceptions.ConnectionError as details:
-                showerror(LANG["error"], LANG["error_internet_translate_word"] + LANG["error_details"] % (
+                showerror(LANG["error"], LANG["error_translate_internet_connection_problems"] + LANG["error_details"] % (
                               details.__class__.__name__, details))
             except Exception as details:  # if something went wrong,
                 showerror(LANG["error"],
-                          LANG["error_unexpected_translate_word"] + LANG["error_details"] % (
+                          LANG["error_translate_unexpected"] + LANG["error_details"] % (
                               details.__class__.__name__, details))
         else:  # if nothing was entered,
+            self.word_variable.set("")  # clear the word variable (something like "     " was entered -> set to "")
             self.translation_variable.set("")  # clear the translation variable
-            self.translate_cbox.configure(value=())
-            self.checked_label.configure(text="")
+            self.translate_cbox.configure(value=())  # remove the translations list
+            self.checked_label.configure(text="")  # remove the checked mark if it was set before
 
     def replace_langs(self):
         """Replaces the languages.
@@ -297,42 +300,39 @@ class ReadIt(Tk):
             self.replace_btn.configure(state="normal")  # it is enabled
 
     def _speak(self, text, lang):
-        if text:
-            tmp_file = BytesIO()
-            gtts.gTTS(text, lang).write_to_fp(tmp_file)
-            tmp_file.seek(0)
-            pygame.mixer.init()
-            pygame.mixer.music.load(tmp_file)
-            pygame.mixer.music.play()
-        self.config(cursor="")
+        if text.strip():
+            try:
+                tmp_file = BytesIO()
+                gtts.gTTS(text, lang).write_to_fp(tmp_file)
+                tmp_file.seek(0)
+                pygame.mixer.init()
+                pygame.mixer.music.load(tmp_file)
+                pygame.mixer.music.play()
+            except ValueError as details:
+                showerror(LANG["error"],
+                          LANG["error_speak_translation_language_not_supported"] % googletrans.LANGUAGES[str(details).split(": ")[-1]].capitalize())
+            except requests.exceptions.ConnectionError as details:
+                showerror(LANG["error"],
+                          LANG["error_translate_internet_connection_problems"] + LANG["error_details"] % (
+                          details.__class__, details))
+            except Exception as details:
+                showerror(LANG["error"], LANG["error_translate_unexpected"] + LANG["error_details"] % (details.__class__.__name__, details))
 
     def speak_word(self):
-        self.config(cursor="watch")
         src = self.src_cbox.get().lower()  # get the source language
         if src == "auto":  # if it is not "auto",
             src = googletrans.Translator().detect(self.word_variable.get()).lang
         else:
             src = self.LANGS_LIST[src]  # get the source language ISO 639-1 representation
-        threading.Thread(target=lambda: self._speak(self.word_variable.get(), src)).start()
+        self._speak(self.word_variable.get(), src)
 
     def speak_translation(self):
-        # TODO: set cursor back even after an error
-        self.config(cursor="watch")
         dest = self.dest_cbox.get().lower()  # get the source language
         if dest == "auto":  # if it is not "auto",
             dest = googletrans.Translator().detect(self.translation_variable.get()).lang
         else:
             dest = self.LANGS_LIST[dest]  # get the source language ISO 639-1 representation
-        # TODO: fix catch errors
-        # TODO: specify what lang is not supported
-        try:
-            self._speak(self.translation_variable.get(), dest)
-        except ValueError:
-            showerror(LANG["error"], LANG["error_language_not_supported"])
-        except requests.exceptions.ConnectionError as details:
-            showerror(LANG["error"], "Не вдалося перекласти слово через проблеми з доступом до мережі Інтернет." % (details.__class__, details))
-        except Exception as details:
-            showerror(LANG["error"], "Сталася невідома помилка.\n\nДеталі: %s (%s)" % (details.__class__, details))
+        self._speak(self.translation_variable.get(), dest)
 
     def select_and_translate(self, event):
         """
@@ -344,17 +344,19 @@ class ReadIt(Tk):
         :rtype: none
         """
         try:  # if there is something selected (for phrases mostly),
-            self.word_variable.set(self.textbox.get(SEL_FIRST, SEL_LAST))  # set the word to be translated to the selection,
-            self.translate_word()  # translate the selected word/phrase
-            self.textbox.tag_remove("sel", "1.0", "end")  # deselect all the text
+            selected_text = self.textbox.get(SEL_FIRST, SEL_LAST).strip()
+            start, end = (SEL_FIRST, SEL_LAST)
         except _tkinter.TclError:  # if nothing is selected (words only; by right-click)
             start = self.textbox.index('@%s,%s wordstart' % (event.x, event.y))  # get the start position of the word,
             end = self.textbox.index('@%s,%s wordend' % (event.x, event.y))  # and the end position of the word,
             self.textbox.tag_add("sel", start, end)  # select the right-clicked word,
             self.textbox.update()  # update the textbox to see the selection (disappears after the word is translated)
-            self.word_variable.set(self.textbox.get(start, end))  # enter to the translation field
-            self.translate_word()  # translate the word
-            self.textbox.tag_remove("sel", start, end)  # deselect the word
+            selected_text = self.textbox.get(start, end).strip()  # get the selected text and remove whitespaces at the ends
+        finally:
+            if selected_text:
+                self.word_variable.set(selected_text)  # enter to the translation field
+                self.translate_word()  # translate the word
+            self.textbox.tag_remove("sel", start, end)  # deselect the selection
 
     def update_title(self):
         """Updates the title when the text filename or vocabulary filename is changed.
@@ -387,7 +389,7 @@ class ReadIt(Tk):
         :return: no value
         :rtype: none
         """
-        if yesno2bool(show_msg("Увага", "Ви дійсно хочете видалити цю закладку?", "warning",
+        if yesno2bool(show_msg(LANG["warning"], LANG["warning_remove_bookmark"], "warning",
                                "yesno")):  # ask warning about bookmark removal
             self.bookmarks_data[self.text_filename].remove(bookmark)  # if the users says "Yes", remove it
         self.update_bookmarks_menu()  # update bookmarks_menu
@@ -409,8 +411,7 @@ class ReadIt(Tk):
         :return: no value
         :rtype: none
         """
-        if yesno2bool(
-                show_msg("Увага", "Ви дійсно хочете очистити весь список закладок для цього файлу?", "warning",
+        if yesno2bool(show_msg(LANG["warning"], LANG["warning_clear_bookmarks_list"], "warning",
                          "yesno")):  # if the user confirms the clearing
             del self.bookmarks_data[self.text_filename]  # remove all the bookmarks for the current filename
         self.update_bookmarks_menu()  # update bookmarks' menu entries
@@ -473,10 +474,9 @@ class ReadIt(Tk):
             with open("bookmarks.dat", "wb") as file:  # open bookmarks.dat for writing
                 pickle.dump(self.bookmarks_data, file)  # update it with new bookmarks
         except Exception as details:  # if an error occurred, show an appropriate warning and ask to retry
-            while retrycancel2bool(show_msg(LANG["error"],
-                                            "Під час створення нової закладки сталася помилка. "
-                                            "Чи не бажаєте повторити спробу?\n\nДеталі: %s (%s)"
-                                            % (details.__class__.__name__, details), icon="error",
+            while retrycancel2bool(show_msg(LANG["error"], LANG["error_add_bookmark"] +
+                                                           LANG["error_details"] % (details.__class__.__name__,
+                                                                                    details), icon="error",
                                             type="retrycancel")):  # while user allows to retry,
                 try:  # try to
                     with open("bookmarks.dat", "wb") as file:  # open the bookmarks.dat file,
@@ -494,9 +494,9 @@ class ReadIt(Tk):
         :rtype: none
         """
         if self.text_opened and self.bookmarks_data is not None:  # if text was opened and bookmarks were not disabled
-            result = askyesnocancel("Додати закладку",
-                                    "Чи бажаєте додати закладку перед продовженням?")  # ask user about adding a bookmark
-            if result:  # if he clicks "Yes",
+            result = askyesnocancel(LANG["bookmarks_add"],
+                                    LANG["warning_add_bookmark_before_continue"])  # ask user to add a bookmark
+            if result:  # if he/she clicks "Yes",
                 self.add_bookmark()  # add a new bookmark,
                 # and then return True
             elif result is None:  # if he clicks "Cancel",
@@ -522,13 +522,11 @@ def show_usage():
     :rtype: none
     """
     Tk().withdraw()  # create and hide a Tk() window (to avoid the blank window appearance on the screen)
-    showerror(LANG["error"],
-              "Ви намагаєтеся відкрити цю програму якимось дивним чином."
-              "\n\nВикористання:\nReadIt.exe text.*\nReadIt.exe vocabulary.pav"
-              "\nReadIt.exe text.* vocabulary.pav")  # show the command-line usage
+    showerror(LANG["error"], LANG["error_commandline_args"])  # show the command-line usage
     os._exit(0)  # terminate the application process
 
-
+# TODO: fix titles - opened files must have slashes accroding to the OS (Windows - \, Linux&OSX - /)
+# TODO: check sys.argv parsing
 if __name__ == "__main__":
     # Parses the sys.argv (command-line arguments)
     files = list(map(lambda s: s.replace("\\", "/"), sys.argv[1:]))  # get the command-line arguments (probably files)

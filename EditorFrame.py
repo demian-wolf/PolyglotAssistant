@@ -1,12 +1,15 @@
 from tkinter import *
 from tkinter.messagebox import showinfo, showerror, _show as show_msg
 from tkinter.filedialog import *
-from tkinter.ttk import Treeview, Entry, Scrollbar
+from tkinter.ttk import Treeview, Entry, Scrollbar, Button
 
 import pickle
 
 from Hotkeys import HKManager
 from utils import yesno2bool, validate_vocabulary_data
+
+
+# TODO: force "Replace words-translations" to stretch with the other parts of the window
 
 
 class EditorFrame(Frame):
@@ -26,9 +29,9 @@ class EditorFrame(Frame):
         self.wtree = Treeview(self, show="headings", columns=["word", "translation"], selectmode=EXTENDED)
         self.wtree.heading("word", text="Слово")  # add the "Word" column
         self.wtree.heading("translation", text="Переклад")  # add the "Translation" column
-        self.wtree.grid(row=0, column=0, columnspan=4, sticky="nsew")  # show it using grid geometry manager
+        self.wtree.grid(row=0, column=0, columnspan=6, sticky="nsew")  # show it using grid geometry manager
         self.scrollbar = Scrollbar(self, command=self.wtree.yview)  # create a scrollbar, attach the words' tree to it
-        self.scrollbar.grid(row=0, column=6, sticky="ns")  # show the scrollbar using grid geometry manager
+        self.scrollbar.grid(row=0, column=7, sticky="ns")  # show the scrollbar using grid geometry manager
         self.wtree.config(yscrollcommand=self.scrollbar.set)  # attach it to the words' tree
 
         # Create the buttons to edit the vocabulary
@@ -36,14 +39,13 @@ class EditorFrame(Frame):
         Button(self, text="Редагувати", command=self.edit).grid(row=1, column=1, sticky="ew")
         Button(self, text="Видалити", command=self.remove).grid(row=1, column=2, sticky="ew")
         Button(self, text="Очистити", command=self.clear).grid(row=1, column=3, sticky="ew")
+        Button(self, text="Змінити місцями", command=self.replace_wt).grid(row=1, column=4, sticky="ew")
 
         # Create a frame for the statusbar
         sbs_frame = Frame(self)  # create the statusbar frame
-        self.tot_sb = Label(sbs_frame, text="Усього: ?",
-                            relief=RIDGE)  # create a label that shows the total words quantity
+        self.tot_sb = Label(sbs_frame, text="Усього: ?")  # create a label that shows the total words quantity
         self.tot_sb.grid(row=0, column=0, sticky="ew")  # show it using the grid geometry manager
-        self.mod_sb = Label(sbs_frame, text="Нередаговано",
-                            relief=RIDGE)  # create a label that shows was the vocabulary modified
+        self.mod_sb = Label(sbs_frame, text="Нередаговано", width=13)  # create a label that shows was the vocabulary modified
         self.mod_sb.grid(row=0, column=1, sticky="ew")  # show it using the grid geometry manager
         sbs_frame.grid(row=2, column=0, columnspan=7, sticky="ew")  # show the whole frame using grid geometry manager
 
@@ -306,6 +308,9 @@ class EditorFrame(Frame):
         else:  # if there aren't any words in vocabulary,
             showinfo("Інформація", "Цей словник порожній. Можливо ви вже його очистили?")
     # TODO: remove _event=None from inappropriate places
+
+    def replace_wt(self):
+        pass
 
     def train_now(self, _event=None):
         pass

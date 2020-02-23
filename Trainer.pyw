@@ -23,6 +23,7 @@ from utils import yesno2bool, retrycancel2bool, validate_users_dict, validate_vo
     about, contact_me, tidy_stats
 
 # TODO: focus after help, about and contact_me; when user was (or was not) deleted
+# TODO: replace Buttons with ttk.Buttons
 
 class Trainer(Tk):
     """
