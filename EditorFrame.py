@@ -9,9 +9,6 @@ from Hotkeys import HKManager
 from utils import yesno2bool, validate_vocabulary_data
 
 
-# TODO: force "Replace words-translations" to stretch with the other parts of the window
-
-
 class EditorFrame(Frame):
     """
     The vocabulary editor's frame class. Because it is in separate class, you can embed it both in ReadIt and Editor.
@@ -22,16 +19,16 @@ class EditorFrame(Frame):
 
         # Let the widgets stretch (by configuring weight)
         self.rowconfigure(0, weight=1)
-        for column_id in range(4):
+        for column_id in range(5):
             self.columnconfigure(column_id, weight=1)
 
         # Create a Treeview widget to display the vocabulary words' list and its scrollbar
         self.wtree = Treeview(self, show="headings", columns=["word", "translation"], selectmode=EXTENDED)
         self.wtree.heading("word", text="Слово")  # add the "Word" column
         self.wtree.heading("translation", text="Переклад")  # add the "Translation" column
-        self.wtree.grid(row=0, column=0, columnspan=6, sticky="nsew")  # show it using grid geometry manager
+        self.wtree.grid(row=0, column=0, columnspan=5, sticky="nsew")  # show it using grid geometry manager
         self.scrollbar = Scrollbar(self, command=self.wtree.yview)  # create a scrollbar, attach the words' tree to it
-        self.scrollbar.grid(row=0, column=7, sticky="ns")  # show the scrollbar using grid geometry manager
+        self.scrollbar.grid(row=0, column=6, sticky="ns")  # show the scrollbar using grid geometry manager
         self.wtree.config(yscrollcommand=self.scrollbar.set)  # attach it to the words' tree
 
         # Create the buttons to edit the vocabulary
@@ -39,7 +36,7 @@ class EditorFrame(Frame):
         Button(self, text="Редагувати", command=self.edit).grid(row=1, column=1, sticky="ew")
         Button(self, text="Видалити", command=self.remove).grid(row=1, column=2, sticky="ew")
         Button(self, text="Очистити", command=self.clear).grid(row=1, column=3, sticky="ew")
-        Button(self, text="Змінити місцями", command=self.replace_wt).grid(row=1, column=4, sticky="ew")
+        Button(self, text="Переставити", command=self.reverse).grid(row=1, column=4, sticky="ew")
 
         # Create a frame for the statusbar
         sbs_frame = Frame(self)  # create the statusbar frame
@@ -59,7 +56,7 @@ class EditorFrame(Frame):
         self.hk_man.add_binding("<Control-A>", self.select_all)
         self.hk_man.add_binding("<Control-Alt-A>", self.add)
         self.hk_man.add_binding("<Control-Alt-E>", self.edit)
-        self.hk_man.add_binding("<Control-Alt-T>", self.train_now)
+        self.hk_man.add_binding("<Control-Alt-R>", self.reverse)
         # TODO: don't be overriden
 
         self.master.bind("<Alt-Delete>", self.remove)
@@ -218,7 +215,7 @@ class EditorFrame(Frame):
             if outfilename:  # if user selected the file (if he canceled the operation, outfilename will equal to None)
                 self._save(outfilename)  # save the vocabulary to selected file
 
-    def add_elem(self, elem):
+    def _add_pair(self, pair):
         """
         Add a word pair to the vocabulary directly without opening the "Add" dialog
 
@@ -227,11 +224,25 @@ class EditorFrame(Frame):
         :return: no value
         :rtype: none
         """
-        self.wtree.insert("", END, values=elem)  # insert the word pair to the words' tree
+        self.wtree.insert("", END, values=pair)  # insert the word pair to the words' tree
         self.wtree.update()  # update the words' tree
         self.set_saved(False)  # set the saved state to False (the vocabulary content was modified)
         self.wtree.selection_set(self.wtree.get_children()[-1])  # select the last word of the vocabulary
         self.wtree.yview_moveto(1)  # move to the end of the vocabulary
+
+    def _edit_pair(self, id, pair):
+        """
+        Edit a word pair from the vocabulary directly without opening the "Edit" dialog
+
+        :param elem: (word, translation) pair
+        :type elem: tuple
+        :return: no value
+        :rtype: none
+        """
+
+        self.wtree.delete(selection[0])  # remove the old element
+        self.wtree.insert("", id, values=pair)  # insert the edited element to that position
+        self.set_saved(False)  # set the vocabulary "saved" state to unsaved
 
     def add(self, _event=None):
         """
@@ -244,7 +255,7 @@ class EditorFrame(Frame):
         """
         to_add = EditPair("Додати")  # call the EditPair dialog with the "Add" caption
         if to_add.data:  # if the user pressed "OK" button,
-            self.add_elem(to_add.data)  # add the word pair to the vocabulary
+            self._add_pair(to_add.data)  # add the word pair to the vocabulary
 
     def edit(self, _event=None):
         """
@@ -256,7 +267,7 @@ class EditorFrame(Frame):
         :rtype: none
         """
         selection = self.wtree.selection()  # get the selection
-        if len(selection) == 0:  # if nothing is selected,
+        if not selection:  # if nothing is selected,
             showinfo("Інформація", "Виберіть пару \"слово-переклад\" спочатку.")
         elif len(selection) > 1:  # if multiple elements selected
             showinfo("Інформація",
@@ -264,10 +275,7 @@ class EditorFrame(Frame):
         else:  # if only one word is selected,
             edited = EditPair("Редагувати", *self.wtree.item(selection[0])["values"])  # get the edited word
             if edited.data and edited.data != tuple(self.wtree.item(selection)["values"]):  # if user edited something
-                old_id = self.wtree.get_children().index(selection[0])  # get the old element position
-                self.wtree.delete(selection[0])  # remove the old element
-                self.wtree.insert("", old_id, values=edited.data)  # insert the edited element to that position
-                self.set_saved(False)  # set the vocabulary "saved" state to unsaved
+                self._edit_pair(self.wtree.get_children().index(selection[0]), edited.data)  # get the element position
 
     def remove(self, _event=None):
         """
@@ -309,8 +317,13 @@ class EditorFrame(Frame):
             showinfo("Інформація", "Цей словник порожній. Можливо ви вже його очистили?")
     # TODO: remove _event=None from inappropriate places
 
-    def replace_wt(self):
-        pass
+    def reverse(self, _event=None):
+        if self.wtree.selection():  # if something is selected,
+
+            self.set_saved(False)  # set saved state to unsaved
+        else:  # if nothing is selected,
+            showinfo("Інформація",
+                     "Спочатку щось виберіть.\nЯкщо ви хочете видалити всі слова зі словнику, натисніть \"Очистити\"")
 
     def train_now(self, _event=None):
         pass

@@ -148,12 +148,15 @@ class ReadIt(Tk):
         self.translate_cbox.grid(row=1, column=1, sticky="we")
         # it adds a words' pair to the dict when you press Enter key
         self.translate_cbox.bind("<Return>",
-                             lambda _event=None: self.vocabulary_editor.add_elem((self.word_variable.get(),
+                             lambda _event=None: self.vocabulary_editor._add_pair((self.word_variable.get(),
                                                                                   self.translation_variable.get())))
 
         controls_frame = Frame(askword_frame)
         controls_frame.grid(row=0, column=2, rowspan=2)
-        Button(controls_frame, style="Square.TButton", text="↻", command=self.translate_word).grid(row=0,
+
+        # Create the button to translate the word
+        self.translate_img = PhotoImage(file="images/16x16/translate.png")
+        Button(controls_frame, image=self.translate_img, command=self.translate_word).grid(row=0,
                                                                           column=1)  # create the "Translate" button
         self.speaker_img = PhotoImage(file="images/16x16/speaker.png")  # load the image for the speaker icon
         # Create two buttons to speak both the word and its translation
@@ -161,11 +164,13 @@ class ReadIt(Tk):
         Button(controls_frame, image=self.speaker_img, command=self.speak_translation).grid(row=1, column=2)
 
         # Create the label to show the check mark if the translation is checked by community
+        self.checked_img = PhotoImage(file="images/16x16/checked.png")
         self.checked_label = Label(controls_frame, fg="green")
         self.checked_label.grid(row=1, column=0)
 
         # Create the button to add the current word to the vocabulary
-        Button(controls_frame, style="Square.TButton", text="➕", command=lambda: self.vocabulary_editor.add_elem(
+        self.add_img = PhotoImage(file="images/16x16/add.png")
+        Button(controls_frame, image=self.add_img, command=lambda: self.vocabulary_editor._add_pair(
             (self.word_variable.get(), self.translation_variable.get()))).grid(row=1, column=1)
         self.grid_rowconfigure(4, weight=1)  # configure the 5-th row's widgets stretch
         self.vocabulary_editor.grid(row=4, column=2, columnspan=3,
@@ -250,7 +255,7 @@ class ReadIt(Tk):
                 result = googletrans.Translator().translate(origin, dest,
                                                         src)  # translate using the Google Translator API
                 self.translation_variable.set(result.text)  # update the translation variable with translation
-                self.checked_label.configure(text="✔" if result.extra_data["translation"][0][4] else "")
+                self.checked_label.configure(image=self.checked_img if result.extra_data["translation"][0][4] else "")
                 new_translations_list = []
                 if result.extra_data["all-translations"]:
                     for group in result.extra_data["all-translations"]:
@@ -303,14 +308,14 @@ class ReadIt(Tk):
         if text.strip():
             try:
                 tmp_file = BytesIO()
-                gtts.gTTS(text, lang).write_to_fp(tmp_file)
+                gtts.gTTS(text=text, lang=lang).write_to_fp(tmp_file)
                 tmp_file.seek(0)
                 pygame.mixer.init()
                 pygame.mixer.music.load(tmp_file)
                 pygame.mixer.music.play()
             except ValueError as details:
                 showerror(LANG["error"],
-                          LANG["error_speak_translation_language_not_supported"] % googletrans.LANGUAGES[str(details).split(": ")[-1]].capitalize())
+                          LANG["error_speak_language_not_supported"] % googletrans.LANGUAGES[str(details).split(": ")[-1]].capitalize())
             except requests.exceptions.ConnectionError as details:
                 showerror(LANG["error"],
                           LANG["error_translate_internet_connection_problems"] + LANG["error_details"] % (
@@ -321,17 +326,20 @@ class ReadIt(Tk):
     def speak_word(self):
         src = self.src_cbox.get().lower()  # get the source language
         if src == "auto":  # if it is not "auto",
-            src = googletrans.Translator().detect(self.word_variable.get()).lang
+            try:
+                src = googletrans.Translator().detect(self.word_variable.get()).lang
+            except requests.exceptions.ConnectionError as details:
+                showerror(LANG["error"], LANG["error_speak_internet_connection_problems"] +
+                          (LANG["error_details"] % (details.__class__.__name__, details)))
+            except Exception as details:
+                showerror(LANG["error"], LANG["error_speak_unexpected"] + LANG["error_details"] %
+                          (details.__class__.__name__, details))
         else:
             src = self.LANGS_LIST[src]  # get the source language ISO 639-1 representation
         self._speak(self.word_variable.get(), src)
 
     def speak_translation(self):
-        dest = self.dest_cbox.get().lower()  # get the source language
-        if dest == "auto":  # if it is not "auto",
-            dest = googletrans.Translator().detect(self.translation_variable.get()).lang
-        else:
-            dest = self.LANGS_LIST[dest]  # get the source language ISO 639-1 representation
+        dest = self.LANGS_LIST[self.dest_cbox.get().lower()]  # get the source language
         self._speak(self.translation_variable.get(), dest)
 
     def select_and_translate(self, event):

@@ -14,6 +14,7 @@ from utils import help_, about, contact_me
 
 # TODO: hide to tray on Esc keypress, and exit on "X" button press
 # TODO: replace Buttons with ttk.Buttons
+# TODO: add "Replace WT" to "Edit" menu
 
 class Editor(Tk):
     """
@@ -62,6 +63,8 @@ class Editor(Tk):
         self.editmenu.add_command(label="Редагувати", command=self.vocabulary_editor.edit, accelerator="Ctrl+Alt+E")
         self.editmenu.add_command(label="Видалити", command=self.vocabulary_editor.remove, accelerator="Alt+Del")
         self.editmenu.add_command(label="Очистити", command=self.vocabulary_editor.clear, accelerator="Shift+Del")
+        self.editmenu.add_command(label="Переставити", command=self.vocabulary_editor.reverse,
+                                  accelerator="Control+Alt+R")
         self.menubar.add_cascade(menu=self.editmenu, label="Правка")
         # Create the "Help" menu and add the appropriate entries
         self.helpmenu = Menu(self.menubar, tearoff=False)
