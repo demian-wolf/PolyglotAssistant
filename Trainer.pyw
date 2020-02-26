@@ -12,7 +12,7 @@ try:
 except ImportError:
     # otherwise
     from tkinter import Spinbox
-import winsound
+import pygame
 import random
 import pickle
 import os
@@ -22,8 +22,15 @@ from Hotkeys import HKManager
 from utils import yesno2bool, retrycancel2bool, validate_users_dict, validate_vocabulary_data, reverse_pairs, help_, \
     about, contact_me, tidy_stats
 
+
 # TODO: focus after help, about and contact_me; when user was (or was not) deleted
 # TODO: replace Buttons with ttk.Buttons
+
+pygame.mixer.init()
+
+def play_sound(filename):
+    pygame.mixer.music.load(filename)
+    pygame.mixer.music.play()
 
 class Trainer(Tk):
     """
@@ -700,7 +707,7 @@ class GymWindow(Toplevel):
             self.enable_controls()  # enable the controls
         else:  # if the queue is empty,
             self.disable_controls()  # disable the controls
-            winsound.PlaySound("sound/applause.wav", winsound.SND_ASYNC)  # play the applause sound
+            play_sound("sound/applause.wav")  # play the applause sound
             self.word_label["text"] = "Ура! Ви закінчили тренування!"  # show the congrats-label instead of a word
             self.after(3000, self.back)  # close the Gym
 
@@ -723,7 +730,7 @@ class GymWindow(Toplevel):
         :rtype: none
         """
         if self.is_right_answer():  # if the right answer entered
-            winsound.PlaySound("sound/shot.wav", winsound.SND_ASYNC)  # play the shoot sound
+            play_sound("sound/shot.wav")  # play the shoot sound
             self.score += 1  # increase the score value by 1
             self.update_score_label()  # update the score label
             # if the current pair is not neither in good-known words nor in bad-known ones
@@ -734,7 +741,7 @@ class GymWindow(Toplevel):
             self.after_cancel(self.tg_after)  # stop the timer event
             self.pass_a_word()  # pass a new word to user
         else:  # if the wrong answer entered,
-            winsound.PlaySound("sound/wrong.wav", winsound.SND_ASYNC)  # play the wrong sound
+            play_sound("sound/wrong.wav")  # play the wrong sound
 
     def _skip(self, action):
         """
@@ -752,7 +759,7 @@ class GymWindow(Toplevel):
             self.totally += 2  # increase the total quantity by two (2 pairs will be added)
             self.update_score_label()  # update the score label
             self.disable_controls()  # disable controls
-            winsound.PlaySound("sound/skip.wav", winsound.SND_ASYNC)  # play the skip sound
+            play_sound("sound/skip.wav")  # play the skip sound
             self.time_pb.stop()  # stop the progressbar
             self.word_label["text"] = "Упс! {} \"{}\" <=> \"{}\"".format(action, *self.pair)  # update the word label
             self.disable_controls()  # disable controls
