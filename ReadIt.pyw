@@ -14,11 +14,14 @@ import sys
 
 import googletrans
 import gtts
-import pygame
 
 from EditorFrame import EditorFrame
 from Hotkeys import HKManager
-from utils import yesno2bool, retrycancel2bool, help_, about, contact_me
+from utils import yesno2bool, retrycancel2bool, help_, about, contact_me, set_window_icon, play_sound
+
+
+
+# TODO: use another way to select languages
 lang = "ua"
 exec("from lang.%s import *" % lang)
 
@@ -99,7 +102,7 @@ class ReadIt(Tk):
         self.helpmenu.add_command(label=LANG["contact_me"], command=contact_me, accelerator="Ctrl+Shift+F1")
         self.menubar.add_cascade(menu=self.helpmenu, label=LANG["help_menu"])  # attach it to the menubar
 
-        self.iconbitmap("images/32x32/app_icon.ico")  # show the left-top window icon
+        set_window_icon(self)  # set the titlebar icon
 
         # let the widgets stretch using grid_columnconfigure method
         self.grid_columnconfigure(0, weight=1)
@@ -310,9 +313,7 @@ class ReadIt(Tk):
                 tmp_file = BytesIO()
                 gtts.gTTS(text=text, lang=lang).write_to_fp(tmp_file)
                 tmp_file.seek(0)
-                pygame.mixer.init()
-                pygame.mixer.music.load(tmp_file)
-                pygame.mixer.music.play()
+                play_sound(tmp_file)
             except ValueError as details:
                 showerror(LANG["error"],
                           LANG["error_speak_language_not_supported"] % googletrans.LANGUAGES[str(details).split(": ")[-1]].capitalize())

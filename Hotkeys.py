@@ -1,9 +1,12 @@
 from tkinter import *
 import itertools
+import platform
 
 
 # TODO: check bindings
 # TODO: make user able to specify func to remove binding
+
+PLATFORM = platform.system()
 
 class HKManager:
     def __init__(self, master):
@@ -16,11 +19,14 @@ class HKManager:
         self.bindings = {}
 
     def add_binding(self, binding, function):
-        binding = "".join(("<", "-".join(sorted(binding[1:-1].split("-")[:-1])), "-", binding[-2], ">"))
-        if binding in self.bindings:
-            self.bindings[binding].append(function)
+        if PLATFORM == "Windows":
+            binding = "".join(("<", "-".join(sorted(binding[1:-1].split("-")[:-1])), "-", binding[-2], ">"))
+            if binding in self.bindings:
+                self.bindings[binding].append(function)
+            else:
+                self.bindings[binding] = [function]
         else:
-            self.bindings[binding] = [function]
+            self.master.bind(binding, function)
             
     def remove_binding(self, binding, function=None):
         if binding in self.bindings:
@@ -37,10 +43,11 @@ class HKManager:
 
     def process_binding(self, event, mods):
         # TODO: work in the right way when <Control-o> pressed instead of <Control-O> etc.
-        binding = "".join(("<", "-".join(mods), "-%s>" % chr(event.keycode))) if mods else "<%s>" % chr(event.keycode)
-        if binding in self.bindings:
-            for function in self.bindings[binding]:
-                function()
+        if PLATFORM == "Windows":
+            binding = "".join(("<", "-".join(mods), "-%s>" % chr(event.keycode))) if mods else "<%s>" % chr(event.keycode)
+            if binding in self.bindings:
+                for function in self.bindings[binding]:
+                    function()
 
 if __name__ == "__main__":
     root = Tk()

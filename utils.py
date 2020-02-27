@@ -1,6 +1,22 @@
+from tkinter import PhotoImage
 from tkinter.messagebox import showinfo
 import webbrowser
 
+import pygame.mixer
+
+
+pygame.mixer.init()
+
+def play_sound(what):
+    """
+    Plays the given sound file object or filename.
+    
+    param what: file object or filename
+    type what: string or file object
+    """
+    
+    pygame.mixer.music.load(what)
+    pygame.mixer.music.play()
 
 def yesno2bool(result):
     """
@@ -52,7 +68,8 @@ def about(_event=None):
     """
 
     showinfo("Про PolyglotAssistant",
-             "PolyglotAssistant 1.00 (C) Дем'ян Волков aka Demian Wolf, 2019-2020"
+             "PolyglotAssistant 1.00\n"
+             "(C) Дем'ян Волков aka Demian Wolf, 2019-2020"
              "\nPolyglotAssistant - легкий спосіб швидко поповнити свій словниковий запас з іноземної мови!"
              "\nДякую за використання моєї програми!")
 
@@ -98,6 +115,7 @@ def validate_users_dict(data):
     :return: no value
     :rtype: none
     """
+    
     assert isinstance(data, dict)  # it must be a dictionary, at first
     for user in data:  # and every user in it
         assert sorted(data[user]) == ["password", "stats"]  # must have password and stats
@@ -122,6 +140,7 @@ def reverse_pairs(data):
     :return: a list, where the every pair is reversed now
     :rtype: list
     """
+    
     return [tuple(reversed(pair)) for pair in data]  # every pair is reversed now
 
 
@@ -136,6 +155,7 @@ def tidy_stats(result, vocabulary_content):
     :return: tidied result
     :rtype: set
     """
+    
     new_result = set()
     for elem in result:
         if elem in vocabulary_content:
@@ -143,3 +163,13 @@ def tidy_stats(result, vocabulary_content):
         else:
             new_result.add(tuple(reversed(elem)))
     return new_result
+
+def set_window_icon(window):
+    """
+    Sets the icon on the window's titlebar.
+    
+    :param window: the Tkinter window, where it is necessary to set the titlebar icon
+    :type window: tkinter.Tk or tkinter.Toplevel object
+    """
+    
+    window.iconphoto(True, PhotoImage(master=window, file="images/32x32/app_icon.png"))

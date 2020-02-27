@@ -9,6 +9,10 @@ from Hotkeys import HKManager
 from utils import yesno2bool, validate_vocabulary_data
 
 
+
+# TODO: try to make "Reverse" tool work using self._edit_pair method (for example, there is no need to pass the select arg, because everywhere there is selected[0] used
+# TODO: make hotkeys work on Linux, too - only check if not Windows OS and if yes, simply bind using the standard Tkinter interface
+
 class EditorFrame(Frame):
     """
     The vocabulary editor's frame class. Because it is in separate class, you can embed it both in ReadIt and Editor.
@@ -58,7 +62,6 @@ class EditorFrame(Frame):
         self.hk_man.add_binding("<Control-Alt-E>", self.edit)
         self.hk_man.add_binding("<Control-Alt-R>", self.reverse)
         # TODO: don't be overriden
-
         self.master.bind("<Alt-Delete>", self.remove)
         self.master.bind("<Shift-Delete>", self.clear)
         self.master.bind("<Home>", self.select_first)
@@ -230,7 +233,7 @@ class EditorFrame(Frame):
         self.wtree.selection_set(self.wtree.get_children()[-1])  # select the last word of the vocabulary
         self.wtree.yview_moveto(1)  # move to the end of the vocabulary
 
-    def _edit_pair(self, id, pair):
+    def _edit_pair(self, selection, pair):
         """
         Edit a word pair from the vocabulary directly without opening the "Edit" dialog
 
@@ -239,9 +242,10 @@ class EditorFrame(Frame):
         :return: no value
         :rtype: none
         """
-
-        self.wtree.delete(selection[0])  # remove the old element
-        self.wtree.insert("", id, values=pair)  # insert the edited element to that position
+        
+        old_id = self.wtree.get_children().index(selection[0])
+        self.wtree.delete(selection[0])  # remove the old 
+        self.wtree.insert("", old_id, values=pair)  # insert the edited element to that position
         self.set_saved(False)  # set the vocabulary "saved" state to unsaved
 
     def add(self, _event=None):
@@ -275,7 +279,7 @@ class EditorFrame(Frame):
         else:  # if only one word is selected,
             edited = EditPair("Редагувати", *self.wtree.item(selection[0])["values"])  # get the edited word
             if edited.data and edited.data != tuple(self.wtree.item(selection)["values"]):  # if user edited something
-                self._edit_pair(self.wtree.get_children().index(selection[0]), edited.data)  # get the element position
+                self._edit_pair(selection, edited.data)  # get the element position
 
     def remove(self, _event=None):
         """
@@ -318,9 +322,14 @@ class EditorFrame(Frame):
     # TODO: remove _event=None from inappropriate places
 
     def reverse(self, _event=None):
-        if self.wtree.selection():  # if something is selected,
-
-            self.set_saved(False)  # set saved state to unsaved
+        selection = self.wtree.selection()
+        if selection:  # if something is selected,
+            for item in selection:
+                reversed_pair = list(reversed(self.wtree.item(item)["values"]))
+                old_id = self.wtree.get_children().index(item)
+                self.wtree.delete(item)  # remove the old item
+                self.wtree.insert("", old_id, values=reversed_pair)  # insert the edited element to that position
+                self.set_saved(False)  # set the vocabulary "saved" state to unsaved
         else:  # if nothing is selected,
             showinfo("Інформація",
                      "Спочатку щось виберіть.\nЯкщо ви хочете видалити всі слова зі словнику, натисніть \"Очистити\"")

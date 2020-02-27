@@ -20,17 +20,11 @@ import sys
 
 from Hotkeys import HKManager
 from utils import yesno2bool, retrycancel2bool, validate_users_dict, validate_vocabulary_data, reverse_pairs, help_, \
-    about, contact_me, tidy_stats
+    about, contact_me, tidy_stats, play_sound, set_window_icon
 
 
 # TODO: focus after help, about and contact_me; when user was (or was not) deleted
 # TODO: replace Buttons with ttk.Buttons
-
-pygame.mixer.init()
-
-def play_sound(filename):
-    pygame.mixer.music.load(filename)
-    pygame.mixer.music.play()
 
 class Trainer(Tk):
     """
@@ -45,7 +39,7 @@ class Trainer(Tk):
     def __init__(self, vocabulary_filename=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.iconbitmap("images/32x32/app_icon.ico")  # show the left-top window icon
+        set_window_icon(self)  # set the titlebar icon
         self.withdraw()  # hide this empty window (there are Toplevels to display something)
         ul_window = UserLoginWindow()  # create a toplevel for user logging
         if ul_window.user.get():  # if user is logged in,
@@ -69,7 +63,7 @@ class UserLoginWindow(Toplevel):
         self.resizable(False, False)  # make the user login window unresizable
         self.after(0, self.focus_force)  # focus to the trainer window on start
 
-        self.iconbitmap("images/32x32/app_icon.ico")  # show the left-top window icon
+        # self.iconbitmap("images/32x32/app_icon.ico")  # show the left-top window icon
 
         self.user = StringVar(self)  # create variable for username
         self.user.set("")  # now username is empty, and it stays empty if user won't log in.
@@ -291,7 +285,6 @@ class AddUser(Toplevel):
         self.resizable(False, False)  # make this dialog unresizable
         self.title("Додати користувача")  # set the title of the dialog to "Add User"
         self.grab_set()  # set grab to disable the master window controls while adding a new user
-        self.iconbitmap("images/32x32/app_icon.ico")  # show the left-top window icon
         self.data = None  # now data is None
         Label(self, text="Ім'я:").grid(row=0, column=0)  # create label with text "Username:"
         self.username_entry = Entry(self)  # create entry for the username,
@@ -379,7 +372,7 @@ class HomeWindow(Toplevel):
         self.helpmenu.add_command(label="Зв'язатися зі мною", command=contact_me, accelerator="Ctrl+Shift+F1")
         self.menubar.add_cascade(label="Допомога", menu=self.helpmenu)  # attach the "Help" menu to the menubar
 
-        self.iconbitmap("images/32x32/app_icon.ico")  # show the left-top window icon
+        # self.iconbitmap("images/32x32/app_icon.ico")  # show the left-top window icon
 
         # Configure widgets' weight (to let them stretch)
         self.rowconfigure(0, weight=1)
@@ -553,7 +546,7 @@ class HomeWindow(Toplevel):
         :rtype: bool
         """
         if P.isdigit():  # if the value is a number,
-            if int(P) in range(1, self.wpg_spb["to"] + 1):  # and if P is in the allowed range,
+            if int(P) in range(1, int(self.wpg_spb["to"]) + 1):  # and if P is in the allowed range,
                 return True  # this is a valid value
         elif P == "":  # if the value is empty, it is also correct
             return True
@@ -650,7 +643,7 @@ class GymWindow(Toplevel):
         self.after(0, self.focus_force)  # set the focus on the GymWindow
         self.title("Спортзала - PolyglotAssistant 1.00 Trainer")  # set the master window title
 
-        self.iconbitmap("images/32x32/app_icon.ico")  # show the left-top window icon
+        # self.iconbitmap("images/32x32/app_icon.ico")  # show the left-top window icon
 
         self.tg_after = None  # set the future after timer event to None (before it is created)
         # Create two sets - for good and bad words

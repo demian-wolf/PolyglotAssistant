@@ -10,11 +10,8 @@ import pystray
 
 from EditorFrame import EditorFrame
 from Hotkeys import HKManager
-from utils import help_, about, contact_me
+from utils import help_, about, contact_me, set_window_icon
 
-# TODO: hide to tray on Esc keypress, and exit on "X" button press
-# TODO: replace Buttons with ttk.Buttons
-# TODO: add "Replace WT" to "Edit" menu
 
 class Editor(Tk):
     """
@@ -31,7 +28,7 @@ class Editor(Tk):
 
         self.tray_icon = None  # create the tray_icon attribute (will be changed when the application is hidden to tray)
 
-        self.protocol("WM_DELETE_WINDOW", self.hide_to_tray)  # hides to tray when user closes the window
+        self.protocol("WM_DELETE_WINDOW", self.exit)  # hides to tray when user closes the window
         
         # Configure rows and columns to let the widgets stretch
         self.rowconfigure(0, weight=1)
@@ -54,7 +51,6 @@ class Editor(Tk):
         self.filemenu.add_command(label="Зберегти як", command=self.vocabulary_editor.save_as, accelerator="Ctrl+Shift+S")
         self.filemenu.add_command(label="Статистика", command=self.statistics)
         self.filemenu.add_separator()
-        self.filemenu.add_command(label="Сховати до трею", command=self.hide_to_tray)
         self.filemenu.add_command(label="Вихід", command=self.exit, accelerator="Alt+F4")
         self.menubar.add_cascade(menu=self.filemenu, label="Файл")
         # Create the "Edit" menu and add the appropriate entries
@@ -74,7 +70,7 @@ class Editor(Tk):
         self.helpmenu.add_command(label="Зв'яжіться зі мною", command=contact_me, accelerator="Ctrl+Shift+F1")
         self.menubar.add_cascade(menu=self.helpmenu, label="Допомога")
 
-        self.iconbitmap("images/32x32/app_icon.ico")  # show the left-top window icon
+        set_window_icon(self)  # set the titlebar icon
 
         # Bind the keybindings
         self.bind("<F1>", help_)
@@ -112,35 +108,6 @@ class Editor(Tk):
         else:  # if the vocabulary is empty,
             showinfo("Статистика", "У словнику поки ще не має слів. Спершу додайте кілька.")  # it is nothing to show
 
-    def hide_to_tray(self, _event=None):
-        """
-        Hides the application to the tray.
-
-        :param _event: the unused Tkinter event
-        :type _event: tkinter.Event
-        :return: no value
-        :rtype: none
-        """
-        self.tray_icon = pystray.Icon("EditorTrayIcon", title="PolyglotAssistant Editor")  # create the tray icon
-        self.tray_icon.icon = Image.open("images/32x32/app_icon.ico")  # open the icon using PIL
-        self.tray_icon.menu = pystray.Menu(pystray.MenuItem("Розгорнути", lambda: self.tray_icon.stop(), default=True),
-                                           pystray.MenuItem("Вийти", lambda: self.tray_exit()))  # add the menu items
-        self.withdraw()  # hide the window
-        self.tray_icon.run()  # run the icon's main loop
-        # icon mainloop
-        self.deiconify()  # when the icon mainloop had been stopped, show the window again
-        self.focus_force()  # focus on it
-
-    def tray_exit(self):
-        """
-        Run exit command from tray.
-
-        :return: no value
-        :rtype: none
-        """
-        self.tray_icon.stop()  # stop the tray icon mainloop
-        self.after(0, self.exit)  # exit from the application
-
     def exit(self):
         """
         Exits the application.
@@ -170,7 +137,7 @@ def show_usage():
     :return: no value
     :rtype: none
     """
-    Tk().withdraw()  # hide the window (otherwise, an empty window is shown)
+    Tk().withdraw()  # creates and hides a dummy window (otherwise, an empty window is shown)
     showerror("Error", "Ви намагаєтеся відкрити цю програму якимось дивним чином."
                        "\n\nВикористання:\nEditor.exe vocabulary.pav")  # displays the error
     os._exit(0)  # terminates the application process
