@@ -15,7 +15,7 @@ from utils import yesno2bool, validate_vocabulary_data
 
 class EditorFrame(Frame):
     """
-    The vocabulary editor's frame class. Because it is in separate class, you can embed it both in ReadIt and Editor.
+    The vocabulary editor's frame class. Because it is in a separate class, you can embed it both in ReadIt and Editor.
     """
 
     def __init__(self, *args, **kwargs):
@@ -331,8 +331,7 @@ class EditorFrame(Frame):
                 self.wtree.insert("", old_id, values=reversed_pair)  # insert the edited element to that position
                 self.set_saved(False)  # set the vocabulary "saved" state to unsaved
         else:  # if nothing is selected,
-            showinfo("Інформація",
-                     "Спочатку щось виберіть.\nЯкщо ви хочете видалити всі слова зі словнику, натисніть \"Очистити\"")
+            showinfo("Інформація", "Спочатку щось виберіть.")
 
     def train_now(self, _event=None):
         pass

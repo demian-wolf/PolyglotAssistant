@@ -26,8 +26,10 @@ class HKManager:
             else:
                 self.bindings[binding] = [function]
         else:
-            self.master.bind(binding, function)
-            
+            bindings = [binding[:-2] + binding[-2].lower() + ">", binding[:-2] + binding[-2].upper() + ">"]
+            for binding in bindings:
+                print("bound:", self.master.bind(binding, function))
+
     def remove_binding(self, binding, function=None):
         if binding in self.bindings:
             if function:
@@ -40,7 +42,7 @@ class HKManager:
                 del self.bindings[binding]
         else:
             raise ValueError("the binding was not found")
-
+    
     def process_binding(self, event, mods):
         # TODO: work in the right way when <Control-o> pressed instead of <Control-O> etc.
         if PLATFORM == "Windows":
