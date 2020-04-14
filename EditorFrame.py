@@ -1,4 +1,4 @@
-from tkinter import *
+﻿from tkinter import *
 from tkinter.messagebox import showinfo, showerror, _show as show_msg
 from tkinter.filedialog import *
 from tkinter.ttk import Treeview, Entry, Scrollbar, Button
@@ -116,6 +116,7 @@ class EditorFrame(Frame):
         :return: no value
         :rtype: none
         """
+
         if self.can_be_closed():  # if the file can be closed,
             try:  # try to
                 if vocabulary_filename:  # if a vocabulary filename was specified to this function
@@ -123,6 +124,7 @@ class EditorFrame(Frame):
                 else:  # if nothing was specified,
                     vocabulary_file = askopenfile(mode="rb", filetypes=[("Словник PolyglotAssistant",
                                                                          "*.pav")])  # ask a .PAV file to open
+                    
             except FileNotFoundError as details:  # if submitted file disappeared suddenly
                 showerror("Помилка",
                           "Не вдалося відкрити файл. Перевірте його наявність у директорії."
@@ -158,7 +160,7 @@ class EditorFrame(Frame):
                                 self.wtree.insert("", END, values=pair)  # insert every pair
                             self.update_totally()  # update the "Totally" status bar label
                             self.set_saved(True)  # set state to saved
-                            self.filename = vocabulary_file.name  # update the filename value
+                            self.filename = os.path.abspath(vocabulary_file.name)  # update the filename value
                             self.master.update_title()  # update the title of the main window
 
     def _save(self, filename):
@@ -175,7 +177,7 @@ class EditorFrame(Frame):
             pickle.dump([tuple(map(str, self.wtree.item(child)["values"])) for child in self.wtree.get_children()],
                         outfile)  # get the vocabulary content and dump it to selected file
             outfile.close()  # now we can close the outfile
-            self.filename = outfile.name  # update the opened file's filename, if changed
+            self.filename = os.path.abspath(outfile.name)  # update the opened file's filename, if changed
             self.set_saved(True)  # set state to saved
         except PermissionError as details:  # if there is a problem with access permissions,
             showerror("Error",

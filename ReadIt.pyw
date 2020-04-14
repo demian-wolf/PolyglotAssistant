@@ -22,8 +22,7 @@ from utils import yesno2bool, retrycancel2bool, help_, about, contact_me, set_wi
 
 
 # TODO: use another way to select languages
-lang = "ua"
-exec("from lang.%s import *" % lang)
+exec("from lang.%s import *" % "ua")
 
 # TODO: fix encoding for the .txt books
 
@@ -531,7 +530,7 @@ def show_usage():
     :rtype: none
     """
     Tk().withdraw()  # create and hide a Tk() window (to avoid the blank window appearance on the screen)
-    showerror(LANG["error"], LANG["error_commandline_args"])  # show the command-line usage
+    showerror(LANG["error"], LANG["error_clargs_ReadIt"])  # show the command-line usage
     os._exit(0)  # terminate the application process
 
 # TODO: fix titles - opened files must have slashes accroding to the OS (Windows - \, Linux&OSX - /)

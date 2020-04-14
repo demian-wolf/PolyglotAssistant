@@ -11,6 +11,7 @@ import pystray
 from EditorFrame import EditorFrame
 from Hotkeys import HKManager
 from utils import help_, about, contact_me, set_window_icon
+exec("from lang.%s import LANG" % "ua")
 
 
 class Editor(Tk):
@@ -26,52 +27,78 @@ class Editor(Tk):
     def __init__(self, *args, vocabulary_filename=None, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.tray_icon = None  # create the tray_icon attribute (will be changed when the application is hidden to tray)
+        self.hk_man = HKManager(self)  # create the hotkeys manager
+        self.create_wgts()
+        self.create_menu()
+        self.bind_keybindings()
+        set_window_icon(self)
+        self.protocol("WM_DELETE_WINDOW", self.exit)
 
-        self.protocol("WM_DELETE_WINDOW", self.exit)  # hides to tray when user closes the window
+        if vocabulary_filename:
+            self.vocabulary_editor.open(vocabulary_filename=vocabulary_filename)
+
+    def create_wgts(self):
+        """
+        This method creates the widgets.
+
+        :return: no value
+        :rtype: none
+        """
         
         # Configure rows and columns to let the widgets stretch
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
-        self.hk_man = HKManager(self)  # create the hotkeys manager
         # Create the vocabulary editor
-        self.vocabulary_editor = EditorFrame()  # create the vocabulary_-editor
+        self.vocabulary_editor = EditorFrame()
         self.vocabulary_editor.grid(sticky="nswe")  # show it using grid geometry manager
         self.vocabulary_editor.set_saved(True)  # set the vocabulary "saved" state to True
 
+    def create_menu(self):
+        """
+        This method creates the menu.
+
+        :return: no value
+        :rtype: none
+        """
+        
         # Create menu at the top of the main window
         self.menubar = Menu(self, tearoff=False)  # create the menubar
         self.config(menu=self.menubar)  # set the menubar widget for the main window
 
         # Create the "File" menu and add the appropriate entries
         self.filemenu = Menu(self.menubar, tearoff=False)
-        self.filemenu.add_command(label="Новий", command=self.vocabulary_editor.new, accelerator="Ctrl+N")
-        self.filemenu.add_command(label="Відкрити", command=self.vocabulary_editor.open, accelerator="Ctrl+O")
-        self.filemenu.add_command(label="Зберегти", command=self.vocabulary_editor.save, accelerator="Ctrl+S")
-        self.filemenu.add_command(label="Зберегти як", command=self.vocabulary_editor.save_as, accelerator="Ctrl+Shift+S")
-        self.filemenu.add_command(label="Статистика", command=self.statistics)
+        self.filemenu.add_command(label=LANG["new"], command=self.vocabulary_editor.new, accelerator="Ctrl+N")
+        self.filemenu.add_command(label=LANG["open"], command=self.vocabulary_editor.open, accelerator="Ctrl+O")
+        self.filemenu.add_command(label=LANG["save"], command=self.vocabulary_editor.save, accelerator="Ctrl+S")
+        self.filemenu.add_command(label=LANG["save_as"], command=self.vocabulary_editor.save_as, accelerator="Ctrl+Shift+S")
         self.filemenu.add_separator()
-        self.filemenu.add_command(label="Вихід", command=self.exit, accelerator="Alt+F4")
-        self.menubar.add_cascade(menu=self.filemenu, label="Файл")
+        self.filemenu.add_command(label=LANG["exit"], command=self.exit, accelerator="Alt+F4")
+        self.menubar.add_cascade(menu=self.filemenu, label=LANG["file_menu"])
         # Create the "Edit" menu and add the appropriate entries
         self.editmenu = Menu(self.menubar, tearoff=False)
-        self.editmenu.add_command(label="Додати", command=self.vocabulary_editor.add, accelerator="Ctrl+Alt+A")
-        self.editmenu.add_command(label="Редагувати", command=self.vocabulary_editor.edit, accelerator="Ctrl+Alt+E")
-        self.editmenu.add_command(label="Видалити", command=self.vocabulary_editor.remove, accelerator="Alt+Del")
-        self.editmenu.add_command(label="Очистити", command=self.vocabulary_editor.clear, accelerator="Shift+Del")
-        self.editmenu.add_command(label="Переставити", command=self.vocabulary_editor.reverse,
+        self.editmenu.add_command(label=LANG["add"], command=self.vocabulary_editor.add, accelerator="Ctrl+Alt+A")
+        self.editmenu.add_command(label=LANG["edit"], command=self.vocabulary_editor.edit, accelerator="Ctrl+Alt+E")
+        self.editmenu.add_command(label=LANG["remove"], command=self.vocabulary_editor.remove, accelerator="Alt+Del")
+        self.editmenu.add_command(label=LANG["clear"], command=self.vocabulary_editor.clear, accelerator="Shift+Del")
+        self.editmenu.add_command(label=LANG["reverse"], command=self.vocabulary_editor.reverse,
                                   accelerator="Control+Alt+R")
-        self.menubar.add_cascade(menu=self.editmenu, label="Правка")
+        self.menubar.add_cascade(menu=self.editmenu, label=LANG["edit_menu"])
         # Create the "Help" menu and add the appropriate entries
         self.helpmenu = Menu(self.menubar, tearoff=False)
-        self.helpmenu.add_command(label="Виклик допомоги", command=help_, accelerator="F1")
+        self.helpmenu.add_command(label=LANG["call_help"], command=help_, accelerator="F1")
         self.helpmenu.add_separator()
-        self.helpmenu.add_command(label="Про PolyglotAssistant", command=about, accelerator="Ctrl+F1")
-        self.helpmenu.add_command(label="Зв'яжіться зі мною", command=contact_me, accelerator="Ctrl+Shift+F1")
-        self.menubar.add_cascade(menu=self.helpmenu, label="Допомога")
+        self.helpmenu.add_command(label=LANG["about_pa"], command=about, accelerator="Ctrl+F1")
+        self.helpmenu.add_command(label=LANG["contact_me"], command=contact_me, accelerator="Ctrl+Shift+F1")
+        self.menubar.add_cascade(menu=self.helpmenu, label=LANG["help_menu"])
 
-        set_window_icon(self)  # set the titlebar icon
+    def bind_keybindings(self):
+        """
+        This method binds the key bindings.
 
+        :return: no value
+        :rtype: none
+        """
+        
         # Bind the keybindings
         self.bind("<F1>", help_)
         self.bind("<Control-F1>", about)
@@ -81,33 +108,6 @@ class Editor(Tk):
         self.hk_man.add_binding("<Control-S>", self.vocabulary_editor.save)
         self.hk_man.add_binding("<Control-Shift-S>", self.vocabulary_editor.save_as)
 
-        if vocabulary_filename:  # if a file was specified in command-line,
-            self.vocabulary_editor.open(vocabulary_filename=vocabulary_filename)  # open the vocabulary
-
-    def statistics(self):
-        """
-        Opens the "Statistics" dialog.
-
-        :return: no value
-        :rtype: none
-        """
-        if self.vocabulary_editor.wtree.get_children():  # if anything in the vocabulary,
-            alphabet_dict = {}  # create the Python dict object to store the count of words, starting with every char
-            for word_pair in self.vocabulary_editor.wtree.get_children():  # process every words' pair
-                first_letter = self.vocabulary_editor.wtree.item(word_pair)["values"][0][0].upper()  # get the 1st char
-                if first_letter in alphabet_dict:  # if the first char is already in the alphabet dict,
-                    alphabet_dict[first_letter] += 1  # increase the words' pairs count for this char (letter) by 1
-                else:  # if the letter was found the first time (so it wasn't in the alphabet_dict before)
-                    alphabet_dict[first_letter] = 1  # set the first char count to 1
-            # create the results' list in a way it is shown in the dialog
-            result_list = ["За першою літерою:"]  # the start caption
-            result_list.extend(
-                ["{} - {}".format(first_letter, count) for first_letter, count in sorted(alphabet_dict.items())])
-            result_list.append("\nУсього: {}".format(len(self.vocabulary_editor.wtree.get_children())))  # totally
-            showinfo("Статистика", ("\n".join(result_list)))  # show the statistics dialogue
-        else:  # if the vocabulary is empty,
-            showinfo("Статистика", "У словнику поки ще не має слів. Спершу додайте кілька.")  # it is nothing to show
-
     def exit(self):
         """
         Exits the application.
@@ -115,9 +115,9 @@ class Editor(Tk):
         :return: no value
         :rtype: none
         """
-        if self.vocabulary_editor.can_be_closed():  # ask user to save the vocabulary; if can close the window then,
-            self.destroy()  # close it
-            os._exit(0)  # terminate the application process
+        
+        if self.vocabulary_editor.can_be_closed():
+            self.destroy()
 
     def update_title(self):
         """
@@ -126,8 +126,9 @@ class Editor(Tk):
         :return: no value
         :rtype: none
         """
+        
         self.title("%s%s - PolyglotAssistant 1.00 Editor" % (self.vocabulary_editor.unsaved_prefix,
-                                                             self.vocabulary_editor.filename))  # formats the title
+                                                             self.vocabulary_editor.filename))
 
 
 def show_usage():
@@ -137,10 +138,9 @@ def show_usage():
     :return: no value
     :rtype: none
     """
-    Tk().withdraw()  # creates and hides a dummy window (otherwise, an empty window is shown)
-    showerror("Error", "Ви намагаєтеся відкрити цю програму якимось дивним чином."
-                       "\n\nВикористання:\nEditor.exe vocabulary.pav")  # displays the error
-    os._exit(0)  # terminates the application process
+    
+    Tk().withdraw()  # creates and hides a dummy window (otherwise, an empty window is shown with the message)
+    showerror("Error", LANG["error_clargs_Editor"])  # displays the error
 
 
 if __name__ == "__main__":
@@ -148,7 +148,6 @@ if __name__ == "__main__":
     if len(sys.argv) == 1:  # if no arguments specified,
         Editor().mainloop()  # run the main window with a new file created
     elif len(sys.argv) == 2:  # if a file was specified,
-        if os.path.splitext(sys.argv[-1])[-1] == ".pav":  # and if it has got ".pav" extension
-            Editor(vocabulary_filename=sys.argv[-1].replace("\\", "/")).mainloop()  # open the vocabulary
+        Editor(vocabulary_filename=sys.argv[-1]).mainloop()  # open the vocabulary
     else:  # if there were multiple arguments specified,
         show_usage()  # show usage
