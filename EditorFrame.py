@@ -137,36 +137,35 @@ class EditorFrame(Frame):
                 else:  # if nothing was specified,
                     vocabulary_file = askopenfile(mode="rb", filetypes=[(LANG["pav_vocabulary_filetype"],
                                                                          "*.pav")])  # ask for a .PAV file to open
-                    
             except FileNotFoundError as details:  # if submitted file disappeared suddenly
                 showerror(LANG["error"],
-                          "Не вдалося відкрити файл. Перевірте його наявність у директорії."
-                          "\n\nДеталі: FileNotFoundError (%s)" % details)
+                          LANG["error_notfound_opening_file"] + (
+                              LANG["error_details"] % (details.__class__.__name__, details)))
             except PermissionError as details:  # if the access to the file denied
                 showerror(LANG["error"],
-                          "Не вдалося відкрити файл. Перевірте Ваші права доступу до нього."
-                          "\n\nДеталі: PermissionError (%s)" % details)
+                          LANG["error_permissions_opening_file"] + (
+                              LANG["error_details"] % (details.__class__.__name__, details)))
             except Exception as details:  # if any other problem happened
-                showerror(LANG["error"], "Під час відкриття файлу сталася невідома помилка.\n\nДеталі: %s (%s)" % (
-                    details.__class__.__name__, details))
+                showerror(LANG["error"],
+                          LANG["error_unexpected_opening_file"] + (
+                              LANG["error_details"] % (details.__class__.__name__, details)))
             else:  # if all is OK,
                 if vocabulary_file:  # if anything was opened...
                     try:  # try to
                         vocabulary_data = pickle.load(vocabulary_file)  # read the vocabulary
                     except pickle.UnpicklingError as details:  # if the file is damaged, or its format is unsupported
                         showerror(LANG["error"],
-                                  "Файл пошкоджено або його формат не підтримується!\n\nДеталі: %s" % details)
+                                  LANG["error_invalid_opening_file"] + (
+                                      LANG["error_details"] % (details.__class__.__name__, details)))
                     except Exception as details:  # if unexpected error occurred,
                         showerror(LANG["error"],
-                                  "Під час відкриття файлу сталася невідома помилка.\n\nДеталі: %s (%s)" % (
-                                      details.__class__.__name__, details))
+                                  LANG["error_unexpected_opening_file"] + (
+                                      LANG["error_details"] % (details.__class__.__name__, details)))
                     else:  # if the file can be decoded,
                         try:
                             validate_vocabulary_data(vocabulary_data)  # check its format
                         except AssertionError:  # if it is invalid,
-                            showerror(LANG["error"],
-                                      "Файл пошкоджено або його формат не підтримується!"
-                                      "\n\nДеталі: закодований у файлі об'єкт не є словником PolyglotAssistant.")
+                            showerror(LANG["error"], LANG["error_invalid_obj_opening_file"])
                         else:  # if the file format is OK,
                             self.wtree.delete(*self.wtree.get_children())  # clear the words-list,
                             for pair in vocabulary_data:  # and insert the words from opened vocabulary there
