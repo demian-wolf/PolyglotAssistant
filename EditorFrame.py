@@ -10,6 +10,7 @@ from utils import yesno2bool, validate_vocabulary_data
 
 
 
+exec("from lang.%s import *" % "ua")
 # TODO: try to make "Reverse" tool work using self._edit_pair method (for example, there is no need to pass the select arg, because everywhere there is selected[0] used
 # TODO: make hotkeys work on Linux, too - only check if not Windows OS and if yes, simply bind using the standard Tkinter interface
 
@@ -21,6 +22,23 @@ class EditorFrame(Frame):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.create_wgts()
+        
+        self.saved = False
+        self.unsaved_prefix = ""
+        self.filename = LANG["non_opened_filename"]  # the default filename is "Untitled"
+
+        self.hk_man = self.master.hk_man  # TODO: find another solution
+        self.bind_keybindings()
+
+    def create_wgts(self):
+        """
+        This method creates the widgets.
+
+        :return: no value
+        :rtype: none
+        """
+        
         # Let the widgets stretch (by configuring weight)
         self.rowconfigure(0, weight=1)
         for column_id in range(5):
@@ -28,35 +46,29 @@ class EditorFrame(Frame):
 
         # Create a Treeview widget to display the vocabulary words' list and its scrollbar
         self.wtree = Treeview(self, show="headings", columns=["word", "translation"], selectmode=EXTENDED)
-        self.wtree.heading("word", text="Слово")  # add the "Word" column
-        self.wtree.heading("translation", text="Переклад")  # add the "Translation" column
+        self.wtree.heading("word", text=LANG["word"])  # add the "Word" column
+        self.wtree.heading("translation", text=LANG["translation"])  # add the "Translation" column
         self.wtree.grid(row=0, column=0, columnspan=5, sticky="nsew")  # show it using grid geometry manager
         self.scrollbar = Scrollbar(self, command=self.wtree.yview)  # create a scrollbar, attach the words' tree to it
         self.scrollbar.grid(row=0, column=6, sticky="ns")  # show the scrollbar using grid geometry manager
         self.wtree.config(yscrollcommand=self.scrollbar.set)  # attach it to the words' tree
 
         # Create the buttons to edit the vocabulary
-        Button(self, text="Додати", command=self.add).grid(row=1, column=0, sticky="ew")
-        Button(self, text="Редагувати", command=self.edit).grid(row=1, column=1, sticky="ew")
-        Button(self, text="Видалити", command=self.remove).grid(row=1, column=2, sticky="ew")
-        Button(self, text="Очистити", command=self.clear).grid(row=1, column=3, sticky="ew")
-        Button(self, text="Переставити", command=self.reverse).grid(row=1, column=4, sticky="ew")
+        Button(self, text=LANG["add"], command=self.add).grid(row=1, column=0, sticky="ew")
+        Button(self, text=LANG["edit"], command=self.edit).grid(row=1, column=1, sticky="ew")
+        Button(self, text=LANG["remove"], command=self.remove).grid(row=1, column=2, sticky="ew")
+        Button(self, text=LANG["clear"], command=self.clear).grid(row=1, column=3, sticky="ew")
+        Button(self, text=LANG["reverse"], command=self.reverse).grid(row=1, column=4, sticky="ew")
 
         # Create a frame for the statusbar
         sbs_frame = Frame(self)  # create the statusbar frame
-        self.tot_sb = Label(sbs_frame, text="Усього: ?")  # create a label that shows the total words quantity
+        self.tot_sb = Label(sbs_frame, text=LANG["totally"] % "?")  # create a label that shows the total words quantity
         self.tot_sb.grid(row=0, column=0, sticky="ew")  # show it using the grid geometry manager
-        self.mod_sb = Label(sbs_frame, text="Нередаговано", width=13)  # create a label that shows was the vocabulary modified
+        self.mod_sb = Label(sbs_frame, text=LANG["unmodified"], width=13)  # create a label that shows was the vocabulary modified
         self.mod_sb.grid(row=0, column=1, sticky="ew")  # show it using the grid geometry manager
         sbs_frame.grid(row=2, column=0, columnspan=7, sticky="ew")  # show the whole frame using grid geometry manager
 
-        # Set the basic values to the class attributes
-        self.saved = None  # saved state is not defined yet
-        self.unsaved_prefix = None  # unsaved prefix is not defined
-        self.filename = "Без імені"  # the default filename is "Untitled"
-
-        # Configure the hotkeys
-        self.hk_man = self.master.hk_man  # TODO: find another solution
+    def bind_keybindings(self):
         self.hk_man.add_binding("<Control-A>", self.select_all)
         self.hk_man.add_binding("<Control-Alt-A>", self.add)
         self.hk_man.add_binding("<Control-Alt-E>", self.edit)
@@ -71,14 +83,15 @@ class EditorFrame(Frame):
 
     def can_be_closed(self):
         """
-        If vocabulary is not saved, and user is trying to create a new one/open another one/quit the app,
+        If the vocabulary is not saved, and user is trying to create a new one/open another one/quit the app,
         app asks the user to save the vocabulary.
 
         :return: no value
         :rtype: none
         """
+        
         if not self.saved:  # if the vocabulary is not saved,
-            result = show_msg("Увага", "Чи бажаєте зберегти словник перед продовженням?", "warning",
+            result = show_msg(LANG["warning"], LANG["warning_save_vocabulary_before_continue"], "warning",
                               "yesnocancel")  # asks about an action
             if result == "yes":  # if user asked to save,
                 self.save()  # it saves
@@ -101,7 +114,7 @@ class EditorFrame(Frame):
         """
         if self.can_be_closed():  # if the file can be closed,
             self.wtree.delete(*self.wtree.get_children())  # clear the wtree frame
-            self.filename = "Без імені"  # set untitled filename
+            self.filename = LANG["non_opened_filename"]  # set untitled filename
             self.set_saved(True)  # set the "saved" state
             self.master.update_title()  # update the master window title
 
@@ -122,36 +135,36 @@ class EditorFrame(Frame):
                 if vocabulary_filename:  # if a vocabulary filename was specified to this function
                     vocabulary_file = open(vocabulary_filename, "rb")  # open the vocabulary file
                 else:  # if nothing was specified,
-                    vocabulary_file = askopenfile(mode="rb", filetypes=[("Словник PolyglotAssistant",
-                                                                         "*.pav")])  # ask a .PAV file to open
+                    vocabulary_file = askopenfile(mode="rb", filetypes=[(LANG["pav_vocabulary_filetype"],
+                                                                         "*.pav")])  # ask for a .PAV file to open
                     
             except FileNotFoundError as details:  # if submitted file disappeared suddenly
-                showerror("Помилка",
+                showerror(LANG["error"],
                           "Не вдалося відкрити файл. Перевірте його наявність у директорії."
                           "\n\nДеталі: FileNotFoundError (%s)" % details)
             except PermissionError as details:  # if the access to the file denied
-                showerror("Помикла",
+                showerror(LANG["error"],
                           "Не вдалося відкрити файл. Перевірте Ваші права доступу до нього."
                           "\n\nДеталі: PermissionError (%s)" % details)
             except Exception as details:  # if any other problem happened
-                showerror("Помилка", "Під час відкриття файлу сталася невідома помилка.\n\nДеталі: %s (%s)" % (
+                showerror(LANG["error"], "Під час відкриття файлу сталася невідома помилка.\n\nДеталі: %s (%s)" % (
                     details.__class__.__name__, details))
             else:  # if all is OK,
                 if vocabulary_file:  # if anything was opened...
                     try:  # try to
                         vocabulary_data = pickle.load(vocabulary_file)  # read the vocabulary
                     except pickle.UnpicklingError as details:  # if the file is damaged, or its format is unsupported
-                        showerror("Помилка",
+                        showerror(LANG["error"],
                                   "Файл пошкоджено або його формат не підтримується!\n\nДеталі: %s" % details)
                     except Exception as details:  # if unexpected error occurred,
-                        showerror("Error",
+                        showerror(LANG["error"],
                                   "Під час відкриття файлу сталася невідома помилка.\n\nДеталі: %s (%s)" % (
                                       details.__class__.__name__, details))
                     else:  # if the file can be decoded,
                         try:
                             validate_vocabulary_data(vocabulary_data)  # check its format
                         except AssertionError:  # if it is invalid,
-                            showerror("Помилка",
+                            showerror(LANG["error"],
                                       "Файл пошкоджено або його формат не підтримується!"
                                       "\n\nДеталі: закодований у файлі об'єкт не є словником PolyglotAssistant.")
                         else:  # if the file format is OK,
@@ -416,12 +429,12 @@ class EditorFrame(Frame):
             self.saved = True  # set saved attribute to True
             self.unsaved_prefix = ""  # hide the "unsaved" asterisk at the start of the title
             self.update_totally()
-            self.mod_sb["text"] = "Нередаговано"  # update the statusbar value
+            self.mod_sb["text"] = LANG["unmodified"]  # update the statusbar value
         else:  # if state == False
             self.saved = False  # set saved attribute to False
             self.unsaved_prefix = "*"  # show the "unsaved" asterisk at the start of the title
             self.update_totally()
-            self.mod_sb["text"] = "Редаговано"  # update the statusbar value
+            self.mod_sb["text"] = LANG["modified"]  # update the statusbar value
         self.master.update_title()  # update the title of the master window
 
     def update_totally(self):
@@ -431,7 +444,7 @@ class EditorFrame(Frame):
         :return: no value
         :rtype: none
         """
-        self.tot_sb.configure(text="Усього: %s" % len(self.wtree.get_children()))
+        self.tot_sb.configure(text=LANG["totally"] % len(self.wtree.get_children()))
 
 
 class EditPair(Toplevel):

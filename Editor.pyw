@@ -11,14 +11,15 @@ import pystray
 from EditorFrame import EditorFrame
 from Hotkeys import HKManager
 from utils import help_, about, contact_me, set_window_icon
-exec("from lang.%s import LANG" % "ua")
 
+
+exec("from lang.%s import LANG" % "ua")
 
 class Editor(Tk):
     """
     The Editor's main class.
 
-    :param vocabulary_filename: the vocabulary filename from the command line (optional)
+    :param vocabulary_filename: thes vocabulary filename from the command line (optional)
     :type vocabulary_filename: str
     :return: no value
     :rtype: none

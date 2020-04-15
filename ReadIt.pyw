@@ -20,7 +20,6 @@ from Hotkeys import HKManager
 from utils import yesno2bool, retrycancel2bool, help_, about, contact_me, set_window_icon, play_sound
 
 
-
 # TODO: use another way to select languages
 exec("from lang.%s import *" % "ua")
 
@@ -45,9 +44,8 @@ class ReadIt(Tk):
         # Vocabulary filename is controlled by the EditorFrame, but the text is controlled by the ReadIt
         # Set the default text filename, when the text was not opened
         self.text_filename = LANG["non_opened_filename"]
-
-        self.withdraw()
-        self.protocol("WM_DELETE_WINDOW", self.exit)  # call the self.exit function when user exits
+        
+        self.protocol("WM_DELETE_WINDOW", self.exit)
 
         self.LANGS_LIST = {value.lower(): key for key, value in
                            googletrans.LANGUAGES.items()
@@ -196,9 +194,7 @@ class ReadIt(Tk):
         except Exception as details:  # if there is another problem,
             showerror(LANG["error"],
                       LANG["error_load_bookmarks"] + LANG["error_details"] % (details.__class__.__name__, details))  # show the appropriate message
-            self.deiconify()  # show the window again
-
-        self.deiconify()
+            
         # if opening some files using command-line
         if text_filename:  # if the text was specified,
             self.open_text(text_filename=text_filename)  # open it

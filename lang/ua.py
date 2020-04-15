@@ -19,7 +19,8 @@ LANG = {"lang_name": "Українська",
         "warning_remove_bookmark": "Ви дійсно бажаєте видалити цю закладку?",
         "warning_clear_bookmarks_list": "Ви дійсно хочете очистити весь список закладок для цього файлу?",
         "warning_add_bookmark_before_continue": "Чи бажаєте додати закладку перед продовженням?",
-
+        "warning_save_vocabulary_before_continue": "Чи бажаєте зберегти словник перед продовженням?",
+        
         "file_menu": "Файл",
         "open_text": "Відкрити текст",
         "new_vocabulary": "Новий словник",
@@ -47,8 +48,13 @@ LANG = {"lang_name": "Українська",
         "remove": "Видалити",
         "clear": "Очистити",
         "reverse": "Переставити",
+        "totally": "Усього: %s",
+        "modified": "Редаговано",
+        "unmodified": "Нередаговано",
         
         "translator_panel": "Панель перекладача",
         "word": "Слово:",
-        "translation": "Переклад:"
+        "translation": "Переклад:",
+
+        "pav_vocabulary_filetype": "Словник PolyglotAssistant",
         }
