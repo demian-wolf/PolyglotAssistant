@@ -177,7 +177,7 @@ class EditorFrame(Frame):
 
     def _save(self, filename):
         """
-        Provides save mechanism (that basic operation that are repeated both when saving, and saving as.
+        Provides save mechanism (that basic operation that is repeated both when saving, and saving as).
 
         :param filename: the filename of the file where to save
         :type filename: str
@@ -192,12 +192,12 @@ class EditorFrame(Frame):
             self.filename = os.path.abspath(outfile.name)  # update the opened file's filename, if changed
             self.set_saved(True)  # set state to saved
         except PermissionError as details:  # if there is a problem with access permissions,
-            showerror("Error",
-                      "Не вдалося зберегти файл. Перевірте Ваші права доступу до нього, в тому числі на запис"
-                      "\n\nДеталі: %s" % details)
+            showerror(LANG["error"],
+                          LANG["error_permissions_opening_file"] + (
+                              LANG["error_details"] % (details.__class__.__name__, details)))
         except Exception as details:  # if there is an unexpected problem occurred,
-            showerror("Error", "Під час збереження файлу сталася невідома помилка.\n\nДеталі: %s (%s)" % (
-                details.__class__.__name__, details))
+            showerror(LANG["error"], LANG["error_unexpected_saving_file"] + (
+                              LANG["error_details"] % (details.__class__.__name__, details)))
 
     def save(self, _event=None):
         """
@@ -208,10 +208,10 @@ class EditorFrame(Frame):
         :return: no value
         :rtype: none
         """
-        if self.filename == "Без імені":  # if the file is untitled,
-            self.save_as()  # save as (to ask user how to name the file)
+        if self.filename == LANG["non_opened_filename"]:  # if the file is untitled,
+            self.save_as()  # open the "Save as..." dialog
         else:  # if the file was already saved (even during the other session, and then opened now),
-            self._save(self.filename)  # save the file with the same filename  
+            self._save(self.filename)  # save the file with the same filename (without opening a dialog)
 
     def save_as(self, _event=None):
         """
@@ -224,10 +224,10 @@ class EditorFrame(Frame):
         """
         try:  # try to
             outfilename = asksaveasfilename(defaultextension=".", filetypes=[
-                ("Словник PolyglotAssistant", ".pav")])  # ask a user for the filename to save to
+                (LANG["pav_vocabulary_filetype"], ".pav")])  # ask a user for the filename to save to
         except Exception as details:  # if an unexpected problem occurred,
-            showerror("Помилка",
-                      "Під час збереження файлу сталася невідома помилка.\n\nДеталі: %s (%s)" % (details, details.__class__.__name__))
+            showerror(LANG["error"], LANG["error_unexpected_opening_file"] + (
+                            LANG["error_details"] % (details.__class__.__name__, details)))
         else:  # if could get the filename,
             if outfilename:  # if user selected the file (if he canceled the operation, outfilename will equal to None)
                 self._save(outfilename)  # save the vocabulary to selected file
@@ -271,7 +271,7 @@ class EditorFrame(Frame):
         :return: no value
         :rtype: none
         """
-        to_add = EditPair("Додати")  # call the EditPair dialog with the "Add" caption
+        to_add = EditPair(LANG["add"])  # call the EditPair dialog with the "Add" caption
         if to_add.data:  # if the user pressed "OK" button,
             self._add_pair(to_add.data)  # add the word pair to the vocabulary
 
@@ -286,12 +286,11 @@ class EditorFrame(Frame):
         """
         selection = self.wtree.selection()  # get the selection
         if not selection:  # if nothing is selected,
-            showinfo("Інформація", "Виберіть пару \"слово-переклад\" спочатку.")
+            showinfo(LANG["information"], LANG["information_select_wt_pair"])
         elif len(selection) > 1:  # if multiple elements selected
-            showinfo("Інформація",
-                     "Виберіть лише одну пару \"слово-переклад\" - ви вибрали %s" % len(selection))
+            showinfo(LANG["information"], LANG["information_select_only_one_wt_pair"] % len(selection))
         else:  # if only one word is selected,
-            edited = EditPair("Редагувати", *self.wtree.item(selection[0])["values"])  # get the edited word
+            edited = EditPair(LANG["edit"], *self.wtree.item(selection[0])["values"])  # get the edited word
             if edited.data and edited.data != tuple(self.wtree.item(selection)["values"]):  # if user edited something
                 self._edit_pair(selection, edited.data)  # get the element position
 
@@ -305,15 +304,12 @@ class EditorFrame(Frame):
         :rtype: none
         """
         if self.wtree.selection():  # if something is selected,
-            if yesno2bool(show_msg("Увага",
-                                   "Ви дійсно хочете видалити усі вибрані (%s) пари слів?"
-                                   % len(self.wtree.selection()),
+            if yesno2bool(show_msg(LANG["warning"], LANG["warning_remove_wt_pairs"] % len(self.wtree.selection()),
                                    "warning", "yesno")):  # ask the user to continue deletion
                 self.wtree.delete(*self.wtree.selection())  # delete selected words
                 self.set_saved(False)  # set saved state to unsaved
         else:  # if nothing is selected,
-            showinfo("Інформація",
-                     "Спочатку щось виберіть.\nЯкщо ви хочете видалити всі слова зі словнику, натисніть \"Очистити\"")
+            showinfo(LANG["information"], LANG["information_select_something_clear"])
 
     def clear(self, _event=None):
         """
@@ -325,14 +321,12 @@ class EditorFrame(Frame):
         :rtype: none
         """
         if self.wtree.get_children():  # if there are some words in vocabulary,
-            if yesno2bool(show_msg("Увага",
-                                   "Всі пари (%s) з цього словнику будуть видалені!"
-                                   "Ви дійсно бажаєте продовжити?" % len(self.wtree.get_children()),
+            if yesno2bool(show_msg(LANG["warning"], LANG["warning_clear_vocabulary"] % len(self.wtree.get_children()),
                                    "warning", "yesno")):  # ask does user want to continue with clearing
                 self.wtree.delete(*self.wtree.get_children())  # clear the vocabulary
                 self.set_saved(False)  # set state to unsaved
         else:  # if there aren't any words in vocabulary,
-            showinfo("Інформація", "Цей словник порожній. Можливо ви вже його очистили?")
+            showinfo(LANG["information"], LANG["information_empty_vocabulary_clear"])
     # TODO: remove _event=None from inappropriate places
 
     def reverse(self, _event=None):
@@ -345,7 +339,7 @@ class EditorFrame(Frame):
                 self.wtree.insert("", old_id, values=reversed_pair)  # insert the edited element to that position
                 self.set_saved(False)  # set the vocabulary "saved" state to unsaved
         else:  # if nothing is selected,
-            showinfo("Інформація", "Спочатку щось виберіть.")
+            showinfo(LANG["information"], LANG["information_select_something_at_first"])
 
     def train_now(self, _event=None):
         pass
@@ -359,6 +353,7 @@ class EditorFrame(Frame):
         :return: no value
         :rtype: none
         """
+        
         self.wtree.selection_set(self.wtree.get_children())  # select all the words' pairs
 
     def select_first(self, _event=None):
@@ -402,6 +397,7 @@ class EditorFrame(Frame):
         :return: no value
         :rtype: none
         """
+        
         self.wtree.yview_scroll(-1, "units")  # scroll up for 1 unit
 
     def page_down(self, _event=None):
@@ -413,6 +409,7 @@ class EditorFrame(Frame):
         :return: no value
         :rtype: none
         """
+        
         self.wtree.yview_scroll(1, "units")  # scroll down for 1 unit
 
     def set_saved(self, state):
@@ -424,6 +421,7 @@ class EditorFrame(Frame):
         :return: no value
         :rtype: none
         """
+        
         if state:  # if state == True
             self.saved = True  # set saved attribute to True
             self.unsaved_prefix = ""  # hide the "unsaved" asterisk at the start of the title
@@ -443,6 +441,7 @@ class EditorFrame(Frame):
         :return: no value
         :rtype: none
         """
+        
         self.tot_sb.configure(text=LANG["totally"] % len(self.wtree.get_children()))
 
 
@@ -463,14 +462,14 @@ class EditPair(Toplevel):
         self.grab_set()  # deny the user to use the master window
         self.title(title)  # set the title of this window
         self.resizable(False, False)  # deny the user to resize this window
-        Label(self, text="Слово:").grid(row=0, column=0)  # create the "Word:" label, show it using grid geometry manager
+        Label(self, text=LANG["word"]).grid(row=0, column=0)  # create the "Word:" label, show it using grid geometry manager
         self.word_entry = Entry(self)  # create the entry widget to enter the word
         self.word_entry.grid(row=0, column=1)  # show the word entry using the grid geometry manager
         self.word_entry.focus()  # focus on the word entry
         self.word_entry.bind("<Return>",
                              lambda _event: self.translation_entry.focus()
                              )  # when the user press "Enter" key focus on the translation entry
-        Label(self, text="Переклад:").grid(row=1, column=0)  # create the "Translation:" label, show it using grid GM
+        Label(self, text=LANG["translation"]).grid(row=1, column=0)  # create the "Translation:" label, show it using grid GM
         self.translation_entry = Entry(self)  # create the translation entry to let user enter the translation
         self.translation_entry.grid(row=1, column=1)  # and show it using the grid geometry manager
         self.translation_entry.bind("<Return>",
