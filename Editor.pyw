@@ -19,7 +19,7 @@ class Editor(Tk):
     """
     The Editor's main class.
 
-    :param vocabulary_filename: thes vocabulary filename from the command line (optional)
+    :param vocabulary_filename: the vocabulary filename from the command line (optional)
     :type vocabulary_filename: str
     :return: no value
     :rtype: none

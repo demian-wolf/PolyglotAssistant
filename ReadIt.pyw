@@ -211,6 +211,7 @@ class ReadIt(Tk):
         :return: no value
         :rtype: none
         """
+        
         if self.can_be_closed():  # if the user confirms the text closing,
             try:  # try to
                 if text_filename:  # if a text file was specified in the command line,

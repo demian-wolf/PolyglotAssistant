@@ -23,6 +23,7 @@ from utils import yesno2bool, retrycancel2bool, validate_users_dict, validate_vo
     about, contact_me, tidy_stats, play_sound, set_window_icon
 
 
+exec("from lang.%s import *" % "ua")
 # TODO: focus after help, about and contact_me; when user was (or was not) deleted
 # TODO: replace Buttons with ttk.Buttons
 
@@ -58,7 +59,7 @@ class UserLoginWindow(Toplevel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.title("Авторизація - PolyglotAssistant 1.00 Trainer")  # set title "Login" to the frame
+        self.title("%s - PolyglotAssistant 1.00 Trainer" % LANG["Authorization"])  # set title "Login" to the frame
         self.protocol("WM_DELETE_WINDOW", self.close)  # when the user closes the window, terminate the whole process
         self.resizable(False, False)  # make the user login window unresizable
         self.after(0, self.focus_force)  # focus to the trainer window on start
@@ -76,7 +77,7 @@ class UserLoginWindow(Toplevel):
         self.scrollbar.grid(row=0, column=6, sticky="ns")  # grid the scrollbar
         self.userslistbox.config(yscrollcommand=self.scrollbar.set)  # configure the users' list
         pwd_frame = Frame(self)  # create frame for the password input
-        Label(pwd_frame, text="Пароль (якщо є):").grid(row=0, column=0, sticky="ew")  # a label, which says "Password:"
+        Label(pwd_frame, text=LANG["Password_if_set:"]).grid(row=0, column=0, sticky="ew")  # a label, which says "Password:"
         self.pwd_entry = Entry(pwd_frame, show="●")  # entry for the password
         self.pwd_entry.grid(row=0, column=1, sticky="ew")  # grid the password entry
         self.pwd_entry.bind("<Return>",
@@ -84,10 +85,10 @@ class UserLoginWindow(Toplevel):
         pwd_frame.grid(columnspan=5)  # grid password frame
 
         # Create the buttons
-        Button(self, text="Увійти як обраний", command=self.login_as_this_user).grid(row=2, column=0, sticky="ew")
-        Button(self, text="Додати нового", command=self.add_a_new_user).grid(row=2, column=1, sticky="ew")
-        Button(self, text="Видалити обраного", command=self.remove_this_user).grid(row=2, column=2, sticky="ew")
-        Button(self, text="Вихід", command=self.close).grid(row=2, column=3, columnspan=2, sticky="ew")
+        Button(self, text=LANG["Log_in_as_selected"], command=self.login_as_this_user).grid(row=2, column=0, sticky="ew")
+        Button(self, text=LANG["Add_new"], command=self.add_a_new_user).grid(row=2, column=1, sticky="ew")
+        Button(self, text=LANG["Remove_selected"], command=self.remove_this_user).grid(row=2, column=2, sticky="ew")
+        Button(self, text=LANG["exit"], command=self.close).grid(row=2, column=3, columnspan=2, sticky="ew")
 
         self.bind("<Escape>", lambda _event: self.close())  # when the user strokes Escape key, close the window
         self.update_ulist()  # update user list (it is empty)
@@ -103,6 +104,8 @@ class UserLoginWindow(Toplevel):
         :return: no value
         :rtype: none
         """
+
+        # TODO: replace event.y <= 17 with something more right
         if event.y <= 17 * self.userslistbox.size():  # if the mouse y on the users' list belongs to any username
             self.login_as_this_user()  # login as the selected user
 
@@ -118,11 +121,11 @@ class UserLoginWindow(Toplevel):
             if self.pwd_entry.get() == self.users_dict[selected_user]["password"]:  # if the right password is entered
                 self.user.set(selected_user)  # return (see "wait_variable" above) the username of the selected user
             else:  # if the wrong password is entered
-                showerror("Помилка", "На жаль, ви ввели неправильний пароль. Спробуйте ще раз.")
+                showerror(LANG["error"], LANG["error_wrong_password_try_again"])
                 self.focus_force()  # set focus on the window again
         else:
             # if user was not selected, show an appropriate message
-            showinfo("Інформація", "Спочатку виберіть користувача. Якщо в списку немає користувачів, додайте одного.")
+            showinfo(LANG["information"], LANG["information_select_user_or_add_a_new_one"])
 
     def add_a_new_user(self):
         """
@@ -392,11 +395,11 @@ class HomeWindow(Toplevel):
 
         # Create the bottom widgets
         Button(self, text="⏎", command=self.back, bg="#add8e6").grid(row=1, column=0, sticky="ew")  # create Back button
-        self.good_label = Label(self, bg="#1E90FF", relief=RAISED)  # create a label for good words pairs,
+        self.good_label = Label(self, bg="#90EE90", relief=RAISED)  # create a label for good words pairs,
         self.good_label.grid(row=1, column=1, sticky="ew")  # and grid it on the master window
-        self.bad_label = Label(self, bg="#FF5050", relief=RAISED)  # create a label for bad words pairs,
+        self.bad_label = Label(self, bg="#FFCCCB", relief=RAISED)  # create a label for bad words pairs,
         self.bad_label.grid(row=1, column=2, sticky="ew")  # and grid it on the master window
-        self.unknown_label = Label(self, bg="#9966FF", relief=RAISED)  # create a label for unknown words,
+        self.unknown_label = Label(self, bg="#EEEEEE", relief=RAISED)  # create a label for unknown words,
         self.unknown_label.grid(row=1, column=3, sticky="ew")  # and grid it on the master window
         self.total_label = Label(self, bg="white", relief=RAISED)  # create a label for total quantity of words,
         self.total_label.grid(row=1, column=4, sticky="ew")  # and grid it on the master window
@@ -513,9 +516,9 @@ class HomeWindow(Toplevel):
                     self.wtree.insert("", END, values=pair, tag="unknown")  # to the pairs' list with "unknown" tag,
                     self.unknown.append(pair)  # and append to the list for unknown words' pairs
             # set the appropriate colors to every word's pair
-            self.wtree.tag_configure("good", background="#1E90FF")
-            self.wtree.tag_configure("bad", background="#FF5050")
-            self.wtree.tag_configure("unknown", background="#9966FF")
+            self.wtree.tag_configure("good", background="#90EE90")
+            self.wtree.tag_configure("bad", background="#FFCCCB")
+            self.wtree.tag_configure("unknown", background="#EEEEEE")
             self.update_stats()  # and update the stats (labels' text values)
 
     def update_stats(self):
