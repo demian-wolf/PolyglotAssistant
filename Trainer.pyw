@@ -134,6 +134,7 @@ class UserLoginWindow(Toplevel):
         :return: no value
         :rtype: none
         """
+        
         udata = AddUser().data  # get the user's data - (name, password) if wasn't canceled, None otherwise
         ulist = None  # users list should be None (it will be changed later, if no error during opening "users.dat")
         if udata:  # if the new user's adding was not canceled,
@@ -141,20 +142,16 @@ class UserLoginWindow(Toplevel):
                 try:  # try to open the users list
                     udat = open("users.dat", "rb")  # users.dat will be opened
                 except FileNotFoundError as details:  # if the "users.dat" file had disappeared from the app directory,
-                    showerror("Помилка",
-                              "Не вдалося відкрити users.dat. Перевірте його місцезнаходження. "
-                              "Програму зараз буде закрито.\n\nДеталі: FileNotFoundError (%s)" % details)
+                    showerror(LANG["error"], LANG["error_users_dat_missing"] +
+                              (LANG["error_details"] % (details.__class__.__name__, details))
                     self.close()  # terminate the program process
                 except PermissionError as details:  # if the access to the file denied
-                    showerror("Помилка",
-                              "Не вдалося відкрити users.dat. Перевірте ваші права доступу до нього. "
-                              "Програму зараз буде закрито.\n\nДеталі: PermissionError (%s)" % details)
+                    showerror(LANG["error"], LANG["error_users_dat_permissions"] +
+                              (LANG["error_details"] % (details.__class__.__name__, details))
                     self.close()  # terminate the program process
                 except Exception as details:  # if any other problem happened
-                    showerror("Помилка",
-                              "Під час відкриття users.dat сталася невідома помилка. "
-                              "Програму зараз буде закрито.\n\nДеталі: %s (%s)" % (
-                                  details.__class__.__name__, details))
+                    showerror(LANG["error"], LANG["error_users_dat_unexpected"] +
+                              (LANG["error_details"] % (details.__class__.__name__, details))
                     self.close()  # terminate the program process
                 else:  # if could open the "users.dat" file,
                     try:  # try to
@@ -162,10 +159,11 @@ class UserLoginWindow(Toplevel):
                     except (pickle.UnpicklingError, EOFError) as details:  # if it's spoiled, or has unsupported format
                         showerror("Помилка",
                                   "Файл users.dat пошкоджено. Програму зараз буде закрито.\n\nДеталі: %s" % details)
+                        # !!! TODO: ask to create a new one and add a translation link here!
                     except Exception as details:  # if unexpected error occurred,
-                        showerror("Помилка",
-                                  "Під час відкриття users.dat сталася невідома помилка.\n\nДеталі: %s (%s)" % (
-                                      details.__class__.__name__, details))
+                        showerror(LANG["error"], LANG["error_users_dat_unexpected"] +
+                                  (LANG["error_details"] % (details.__class__.__name__, details))
+                        self.close()
             else:  # if there is no "users.dat" in the app path,
                 ulist = {}  # create a new users' dictionary
             if ulist is not None:  # if could open users' list,
