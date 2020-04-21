@@ -143,40 +143,38 @@ class UserLoginWindow(Toplevel):
                     udat = open("users.dat", "rb")  # users.dat will be opened
                 except FileNotFoundError as details:  # if the "users.dat" file had disappeared from the app directory,
                     showerror(LANG["error"], LANG["error_users_dat_missing"] +
-                              (LANG["error_details"] % (details.__class__.__name__, details))
+                              (LANG["error_details"] % (details.__class__.__name__, details)))
                     self.close()  # terminate the program process
                 except PermissionError as details:  # if the access to the file denied
                     showerror(LANG["error"], LANG["error_users_dat_permissions"] +
-                              (LANG["error_details"] % (details.__class__.__name__, details))
+                              (LANG["error_details"] % (details.__class__.__name__, details)))
                     self.close()  # terminate the program process
                 except Exception as details:  # if any other problem happened
                     showerror(LANG["error"], LANG["error_users_dat_unexpected"] +
-                              (LANG["error_details"] % (details.__class__.__name__, details))
+                              (LANG["error_details"] % (details.__class__.__name__, details)))
                     self.close()  # terminate the program process
                 else:  # if could open the "users.dat" file,
                     try:  # try to
                         ulist = pickle.load(udat)  # decode it,
-                    except (pickle.UnpicklingError, EOFError) as details:  # if it's spoiled, or has unsupported format
-                        showerror("Помилка",
-                                  "Файл users.dat пошкоджено. Програму зараз буде закрито.\n\nДеталі: %s" % details)
-                        # !!! TODO: ask to create a new one and add a translation link here!
+                        validate_users_dict(ulist)
+                    except (pickle.UnpicklingError, EOFError, AssertionError) as details:  # if it's spoiled, or has unsupported format
+                        showerror(LANG["error"], LANG["error_users_dat_damaged"] +
+                                  (LANG["error_details"] % (details.__class__.__name__, details)))
                     except Exception as details:  # if unexpected error occurred,
                         showerror(LANG["error"], LANG["error_users_dat_unexpected"] +
-                                  (LANG["error_details"] % (details.__class__.__name__, details))
+                                  (LANG["error_details"] % (details.__class__.__name__, details)))
                         self.close()
             else:  # if there is no "users.dat" in the app path,
                 ulist = {}  # create a new users' dictionary
             if ulist is not None:  # if could open users' list,
                 ulist[udata[0]] = {"password": udata[1],
-                                   "stats": {}}  # assign new user's name with his password and stats
+                                   "stats": {}}  # assign new user's name with password and stats
                 try:  # try to
                     pickle.dump(ulist, open("users.dat", "wb"))  # dump it all into new "users.dat" file
                 except Exception as details:  # if something went wrong,
-                    while retrycancel2bool(show_msg("Помилка",
-                                                    "Під час збереження файлу users.dat сталася невідома помилка, "
-                                                    "тому зберегти нового користувача не вдалося. "
-                                                    "Чи не бажаєте повторити спробу?\n\nДеталі: %s (%s)"
-                                                    % (details.__class__.__name__, details), icon="error",
+                    while retrycancel2bool(show_msg(LANG["error"],
+                                                    LANG["error_users_dat_saving_error"] + (LANG["error_details"]
+                                                    % (details.__class__.__name__, details)), icon="error",
                                                     type="retrycancel")):  # ask about retry while the error is going on
                         try:  # try to
                             with open("users.dat", "wb") as file:  # open the users.dat,
@@ -197,22 +195,23 @@ class UserLoginWindow(Toplevel):
         if self.userslistbox.curselection():  # if any user is selected,
             selected_user = self.userslistbox.get(self.userslistbox.curselection()[0])  # get selected user's name
             # if deletion was confirmed,
-            if yesno2bool(show_msg("Увага", "Зараз буде видалено кориистувача \"%s\". "
-                                            "Ви дійсно бажаєте продовжити?" % selected_user, "warning", "yesno")):
+            if yesno2bool(show_msg(LANG["warning"], LANG["warning_remove_user"] % selected_user, "warning", "yesno")):
                 if self.pwd_entry.get() == self.users_dict[selected_user]["password"]:  # if the right password entered,
                     del self.users_dict[selected_user]  # delete this user from the users' dict
                     try:  # try to
                         outf = open("users.dat", "wb")  # open the "users.dat" with bytes-writing mode,
                         pickle.dump(self.users_dict, outf)  # dump the dictionary
                         outf.close()  # close the "users.dat"
-                    except PermissionError:
+                    except PermissionError as details:
                         # if there is a PermissionError occurred, show an appropriate error.
-                        showerror("Помилка", "Не вдалося відкрити users.dat. Перевірте ваші права доступу до нього.")
+                        showerror(LANG["error"],
+                                  LANG["error_users_dat_could_not_open"] + (LANG["error_details"]
+                                                    % (details.__class__.__name__, details)))
                     self.update_ulist()  # update the users' list from the "users.dat"
                 else:
-                    showerror("Помилка", "Уведіть правильний пароль.")  # if the wrong password was entered, show an error
+                    showerror(LANG["error"], LANG["error_wrong_password_try_again"])  # if the wrong password was entered, show an error
         else:
-            showinfo("Інформація", "Спочатку виберіть, що потрібно видалити.")  # if none is selected, show a message
+            showinfo(LANG["information"], LANG["information_select_something_at_first"])  # if nothing is selected, show a message
 
     def update_ulist(self):
         """
@@ -226,19 +225,20 @@ class UserLoginWindow(Toplevel):
             try:  # try to:
                 self.users_dict = pickle.load(open("users.dat", "rb"))  # read the users' dict from the pickle
             except PermissionError:  # if you have no permissions to access the "users.dat",
-                showerror("Помилка", "Не вдалося відкрити users.dat. Перевірте ваші права доступу до нього.")
+                showerror(LANG["error"], LANG["error_users_dat_permissions"])
                 self.close()  # terminate the process
             except (pickle.UnpicklingError, EOFError) as details:  # if the "users.dat" is damaged,
-                if yesno2bool(show_msg("Помилка", "Файл users.dat пошкоджено. "
-                                                "Чи не бажаєте видалити його, а потім додати нових користувачів?"
-                                                  "\n\nДеталі: %s (%s)" %
-                                                (details.__class__.__name__, details), "error", "yesno")):
+                if yesno2bool(show_msg(LANG["error"],
+                                       LANG["error_users_dat_damaged_would_you_like_to_remove"] +
+                                       (LANG["error_details"] %
+                                                (details.__class__.__name__, details)), "error", "yesno")):
                     try:  # try to
                         os.remove("users.dat")  # remove it (after asking the user)
                     except Exception as details:  # if couldn't remove "users.dat",
-                        showerror("Помилка", "Не вдалося видалити users.dat.\n\nДеталі: %s (%s)" % (
-                            details.__class__.__name__, details))
+                        showerror(LANG["error"], LANG["error_users_dat_could_not_remove"] + (LANG["error_details"]
+                                                    % (details.__class__.__name__, details)))
                         self.destroy()
+                        # TODO: destroy or close?
                     self.after(0, self.focus_force)  # set focus to the application window
                 else:  # if user canceled the removal,
                     self.close()  # terminate the application process
@@ -246,9 +246,8 @@ class UserLoginWindow(Toplevel):
                 try:  # check
                     validate_users_dict(self.users_dict)  # if the users' dict has valid format
                 except AssertionError:  # if it isn't,
-                    showerror("Помилка",
-                              "The users.dat is damaged. It'll be removed. Add new users then. "
-                              "\n\nДеталі: у файлі було закодовано об'єкт, що не є правильним списком користувачів.")
+                    showerror(LANG["error"],
+                              LANG["error_users_dat_invalid_obj_is_pickled"])
                     os.remove("users.dat")  # remove the "users.dat" file
                 else:
                     self.userslistbox.insert(END, *self.users_dict.keys())  # if all is OK, insert all users to the list
@@ -256,8 +255,7 @@ class UserLoginWindow(Toplevel):
             # Hide the empty main window (this frame wasn't grid yet)
             self.withdraw()
             # show the message about the first run of the program.
-            showinfo("Інформація", "Привіт, шановний користувачу! Радий вас бачити вперше!"
-                                    "\nСпочатку додайте нового користувача.")
+            showinfo(LANG["information"], LANG["information_Trainer_hi_dear_user"])
             self.deiconify()  # show the main window now
         self.userslistbox.focus()  # focus on the users' list (to select a user without mouse, only with arrow keys)
         # And now select the first user from the list using .select_set(0) and .activate(0)
@@ -284,14 +282,14 @@ class AddUser(Toplevel):
         super().__init__()
 
         self.resizable(False, False)  # make this dialog unresizable
-        self.title("Додати користувача")  # set the title of the dialog to "Add User"
+        self.title(LANG["Add_user"])  # set the title of the dialog to "Add User"
         self.grab_set()  # set grab to disable the master window controls while adding a new user
         self.data = None  # now data is None
-        Label(self, text="Ім'я:").grid(row=0, column=0)  # create label with text "Username:"
+        Label(self, text=LANG["Name:"]).grid(row=0, column=0)  # create label with text "Username:"
         self.username_entry = Entry(self)  # create entry for the username,
         self.username_entry.grid(row=0, column=1)  # grid this entry,
         self.username_entry.focus()  # and focus on it
-        Label(self, text="Пароль:").grid(row=1, column=0)  # create label with text "Password:"
+        Label(self, text=LANG["Password:"]).grid(row=1, column=0)  # create label with text "Password:"
         self.pwd_entry = Entry(self, show="●")  # create entry for the password,
         self.pwd_entry.grid(row=1, column=1)  # grid this entry
         # when the username is entered and the user press "Enter" ("Return") key, Tkinter focus on the password entry
@@ -299,7 +297,7 @@ class AddUser(Toplevel):
         # when both the username and the password are entered, app submits the user's data on "Enter" press
         self.pwd_entry.bind("<Return>", self.ok)
         Button(self, text="ОК", command=self.ok).grid(row=2, column=0, sticky="ew")  # create "OK" button
-        Button(self, text="Скасувати", command=self.destroy).grid(row=2, column=1, sticky="ew")  # create "Cancel" button
+        Button(self, text=LANG["Cancel"], command=self.destroy).grid(row=2, column=1, sticky="ew")  # create "Cancel" button
         self.wait_window()  # doesn't return anything while the window is not destroyed
 
     def ok(self, _event=None):
@@ -310,7 +308,7 @@ class AddUser(Toplevel):
         :return: no value
         """
         if not self.username_entry.get():  # if the user skipped username entry, give him a warning
-            showwarning("Увага", "Будь ласка, введіть ім'я користувача!")
+            showwarning(LANG["warning"], "Будь ласка, введіть ім'я користувача!")
             return  # stop this function
         if not self.pwd_entry.get():  # if the user skipped password entry, give him a warning
             if not yesno2bool(show_msg("Увага",
