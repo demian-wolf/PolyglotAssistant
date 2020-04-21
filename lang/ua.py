@@ -25,7 +25,7 @@ LANG = {"lang_name": "Українська",
         "error_users_dat_permissions": "Не вдалося відкрити users.dat. Перевірте Ваші права доступу до нього. Програму зараз буде закрито.",
         "error_users_dat_unexpected": "Не вдалося відкрити users.dat через невідому помилку. Програму зараз буде закрито.",
         "error_users_dat_damaged": "Файл users.dat пошкоджено. Програму зараз буде закрито.",
-        "error_users_dat_damaged_would_you_like_to_remove": "Файл users.dat пошкоджено. Чи не бажаєте видалити його, а потім додати нових користувачів?"
+        "error_users_dat_damaged_would_you_like_to_remove": "Файл users.dat пошкоджено. Чи не бажаєте видалити його, а потім додати нових користувачів?",
         "error_users_dat_saving_error": "Під час збереження файлу users.dat сталася невідома помилка, тому зберегти нового користувача не вдалося. Чи не бажаєте повторити спробу?",
         "error_users_dat_could_not_remove": "Не вдалося видалити users.dat.",
         "error_users_dat_could_not_open": "Не вдалося відкрити users.dat. Перевірте ваші права доступу до нього.",
@@ -45,7 +45,7 @@ LANG = {"lang_name": "Українська",
         "information_empty_vocabulary_clear": "Цей словник порожній. Можливо ви вже його очистили?",
         "information_select_something_at_first": "Спочатку щось виберіть",
         "information_select_user_or_add_a_new_one": "Спочатку виберіть користувача. Якщо в списку немає користувачів, додайте одного.",
-        "information_Trainer_hi_dear_user": "Привіт, шановний користувачу! Радий вас бачити вперше!\nСпочатку додайте нового користувача."
+        "information_Trainer_hi_dear_user": "Привіт, шановний користувачу! Радий вас бачити вперше!\nСпочатку додайте нового користувача.",
         
         "file_menu": "Файл",
         "open_text": "Відкрити текст",

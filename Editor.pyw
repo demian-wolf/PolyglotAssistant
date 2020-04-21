@@ -6,7 +6,6 @@ import os
 import sys
 
 from PIL import Image
-import pystray
 
 from EditorFrame import EditorFrame
 from Hotkeys import HKManager
