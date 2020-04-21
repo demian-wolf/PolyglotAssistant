@@ -4,7 +4,7 @@
 PolyglotAssistant is an opensource toolkit, written in Python 3 Tkinter, for those who learn words of foreign languages. It consists of a vocabulary editor, a book reader, and a vocabulary trainer.
 
 ## The first release is coming soon!
-Currently the app is in Ukrainian only but I'm translating it to other languages. I'm also planning to release the first version soon. If you are interested, click on "Watch" button to get notification about the latest commits and releases!
+Currently the app is in Ukrainian only but I'm translating it to other languages. I'm also planning to release the first version soon. If you are interested, click on "Watch" button to get notifications about the latest commits and releases!
 
 ## Usage
 1) Download/clone this repository.
