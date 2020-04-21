@@ -10,4 +10,4 @@ PolyglotAssistant is an opensource toolkit, written in Python 3 Tkinter, for tho
 4) Run Editor.pyw (vocabulary editor), ReadIt.pyw (all-in-one book reader with translator and vocaulary editor) or Trainer.pyw (to train words from an existing vocabulary).
 5) Enjoy! :)
 
-Note: It's recommended to do this actions in a virtual environment, though it is not necessary.
+Note: It's recommended to do these actions in a virtual environment, though it is not necessary.
