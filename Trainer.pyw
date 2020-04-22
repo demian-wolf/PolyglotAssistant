@@ -308,14 +308,11 @@ class AddUser(Toplevel):
         :return: no value
         """
         if not self.username_entry.get():  # if the user skipped username entry, give him a warning
-            showwarning(LANG["warning"], "Будь ласка, введіть ім'я користувача!")
+            showwarning(LANG["warning"], LANG["warning_please_enter_username"])
             return  # stop this function
         if not self.pwd_entry.get():  # if the user skipped password entry, give him a warning
-            if not yesno2bool(show_msg("Увага",
-                                       "Не рекомендується створювати користувачів без паролю. "
-                                       "Оскільки кожен, хто має доступ до цього ПК може змінити вашу статистику або "
-                                       "навіть просто видалити ваш акаунт користувача! Ви дійсно бажаєте продовжити?",
-                                       "warning", "yesno")):  # ask the user about continuation
+            if not yesno2bool(show_msg(LANG["warning"],
+                                       LANG["warning_user_without_password"], "warning", "yesno")):  # ask the user about continuation
                 return  # and stop the function
         self.data = self.username_entry.get(), self.pwd_entry.get()  # set user's data according to entries' values
         self.grab_release()  # release grab to allow usage of the master window again
@@ -338,7 +335,6 @@ class HomeWindow(Toplevel):
         super().__init__(*args, **kwargs)
 
         self.after(0, self.focus_force)  # set focus on the "Home" window
-        self.title("{} - Головна ({}) - PolyglotAssistant 1.00 Trainer".format("Без імені", user))  # set master window's title
         self.protocol("WM_DELETE_WINDOW", self.back)  # when the user tries to close the window, UserLoginWindow opens
 
         # create lists for good, bad, and unknown words  (they're empty while nothing is opened)
@@ -349,9 +345,11 @@ class HomeWindow(Toplevel):
         # get users_dict and username (for stats)
         self.users_dict = users_dict  # set the users_dict attribute to the users_dict argument
         self.user = user  # set the user attribute to the same argument
+        self.vocabulary_opened = False
         self.vocabulary_data = None  # while nothing is opened, vocabulary data is none
         self.vocabulary_filename = vocabulary_filename  # get .pav filename
-
+        self.update_title()
+        
         self.hk_man = HKManager(self)
 
         # Create menus
@@ -359,17 +357,17 @@ class HomeWindow(Toplevel):
         self.config(menu=self.menubar)  # attach it to the master window
         # Create the "File" menu
         self.filemenu = Menu(self.menubar, tearoff=False)
-        self.filemenu.add_command(label="Відкрити", command=self.open_vocabulary, accelerator="Ctrl+O")
+        self.filemenu.add_command(label=LANG["open"], command=self.open_vocabulary, accelerator="Ctrl+O")
         self.filemenu.add_separator()
-        self.filemenu.add_command(label="Увійти як інший користувач", command=lambda: self.back(), accelerator="Alt+F4")
-        self.menubar.add_cascade(label="Файл", menu=self.filemenu)  # attach the "File" menu to the menubar
+        self.filemenu.add_command(label=LANG["log_in_as_another_user"], command=lambda: self.back(), accelerator="Alt+F4")
+        self.menubar.add_cascade(label=LANG["file_menu"], menu=self.filemenu)  # attach the "File" menu to the menubar
         # Create the "Help" menu
         self.helpmenu = Menu(self.menubar, tearoff=False)
-        self.helpmenu.add_command(label="Виклик допомоги", command=help_, accelerator="F1")
+        self.helpmenu.add_command(label=LANG["call_help"], command=help_, accelerator="F1")
         self.helpmenu.add_separator()
-        self.helpmenu.add_command(label="Про PolyglotAssistant", command=about, accelerator="Ctrl+F1")
-        self.helpmenu.add_command(label="Зв'язатися зі мною", command=contact_me, accelerator="Ctrl+Shift+F1")
-        self.menubar.add_cascade(label="Допомога", menu=self.helpmenu)  # attach the "Help" menu to the menubar
+        self.helpmenu.add_command(label=LANG["about_pa"], command=about, accelerator="Ctrl+F1")
+        self.helpmenu.add_command(label=LANG["contact_me"], command=contact_me, accelerator="Ctrl+Shift+F1")
+        self.menubar.add_cascade(label=LANG["help_menu"], menu=self.helpmenu)  # attach the "Help" menu to the menubar
 
         # self.iconbitmap("images/32x32/app_icon.ico")  # show the left-top window icon
 
@@ -380,8 +378,8 @@ class HomeWindow(Toplevel):
 
         # Create and configure a Treeview widget for viewing the words pairs
         self.wtree = Treeview(self, show="headings", columns=["word", "translation"], selectmode=EXTENDED)
-        self.wtree.heading("word", text="Слово")  # create the "Word" column
-        self.wtree.heading("translation", text="Переклад")  # create the "Translation" column
+        self.wtree.heading("word", text=LANG["word"])  # create the "Word" column
+        self.wtree.heading("translation", text=LANG["translation"])  # create the "Translation" column
         self.wtree.grid(row=0, column=0, columnspan=8, sticky="nsew")  # grid it to the screen
 
         # Create, grid, and configure self.scrollbar
@@ -407,7 +405,7 @@ class HomeWindow(Toplevel):
         self.wpg_spb.configure(validatecommand=(self.register(self.validate_wpg), '%P'))  # set the validate command
         self.wpg_spb.grid(row=1, column=6, sticky="ew")  # create the words per game spinbox
         self.wpg_spb.bind("<Return>", self.start)  # after entering w/g value, the user can press "Enter" to continue
-        Button(self, bg="#add8e6", text="Почати! ▶", command=self.start) \
+        Button(self, bg="#add8e6", text=LANG["Start!"], command=self.start) \
             .grid(row=1, column=7, columnspan=2, sticky="ew")  # create the "Start" button
 
         # Create keybindings
@@ -438,10 +436,10 @@ class HomeWindow(Toplevel):
             if vocabulary_filename:  # if the vocabulary filename was passed (e.g from command-line),
                 filename = vocabulary_filename  # set the filename to this,
             else:  # if the vocabulary filename was not passed,
-                filename = askopenfilename(filetypes=[("Словник PolyglotAssitant", ".pav")])  # use the "Open" dialog
+                filename = askopenfilename(filetypes=[(LANG["pav_vocabulary_filetype"], ".pav")])  # use the "Open" dialog
         except Exception as details:  # if something went wrong, show an error message
-            showerror("Помилка", "На жаль, не вдалося відкрити цей словник!\n\nДеталі: %s (%s)" % (
-                details.__class__.__name__, details))
+            showerror(LANG["error"], LANG["error_invalid_opening_file"] +
+                      (LANG["error_details"] % (details.__class__.__name__, details)))
         else:  # if could get filename,
             if filename:  # if the user didn't clicked "Cancel" in the open-file dialog,
                 try:  # try to open this file
@@ -449,24 +447,23 @@ class HomeWindow(Toplevel):
                     self.vocabulary_data = pickle.load(file)  # and try to load the vocabulary from it
                 except pickle.UnpicklingError:
                     # if couldn't unpickle it, show an error message
-                    showerror("Помилка", "На жаль, не вдалося відкрити цей словник!\n\nДеталі: невідомий формат"
-                                         "словнику, або він пошкоджений")
+                    showerror(LANG["error"], LANG["error_invalid_opening_file"] +
+                              (LANG["error_details"] % (details.__class__.__name__, details)))
                 except Exception as details:  # if something another went wrong
-                    showerror("Помилка", "На жаль, не вдалося відкрити цей словник!\n\nДеталі: %s (%s)" % (
-                        details.__class__.__name__, details))
+                    showerror(LANG["error"], LANG["error_invalid_opening_file"] +
+                              (LANG["error_details"] % (details.__class__.__name__, details)))
                 else:  # otherwise,
                     try:
                         # validate the unpickled vocabulary data
                         validate_vocabulary_data(self.vocabulary_data)
                     except AssertionError:  # if this vocabulary data is invalid, show an error message
-                        showerror("Помилка",
-                                  "На жаль, не вдалося відкрити цей словник!"
-                                  "\n\nДеталі: формат цього словника не підтримується!")
+                        showerror(LANG["error"], LANG["error_invalid_obj_opening_file"] +
+                              (LANG["error_details"] % (details.__class__.__name__, details)))
                     else:  # if it is a valid learning plan,
+                        self.vocabulary_opened = True
                         self.vocabulary_filename = file.name  # and set up the filename attribute
                         self.get_words_list()  # get words list from the learning plan,
-                        self.title("{} - Головна ({}) - PolyglotAssistant 1.00 Trainer".format(
-                            self.vocabulary_filename, self.user))  # update the title
+                        self.update_title()  # update the title
                         vocabulary_len = len(self.vocabulary_data)  # get the vocabulary length
                         if vocabulary_len > 12:  # if it is bigger, than 12,
                             self.wpg_var.set(12)  # set the default words-per-game value to 12
@@ -517,6 +514,11 @@ class HomeWindow(Toplevel):
             self.wtree.tag_configure("unknown", background="#EEEEEE")
             self.update_stats()  # and update the stats (labels' text values)
 
+    def update_title(self):
+            self.title("{} - {} ({}) - PolyglotAssistant 1.00 Trainer"\
+                       .format(self.vocabulary_filename if self.vocabulary_opened else LANG["non_opened_filename"],
+                               LANG["Home"], self.user))  # set master window's title
+
     def update_stats(self):
         """
         Update the statistics (at the bottom of the window).
@@ -526,12 +528,11 @@ class HomeWindow(Toplevel):
         """
         # if anything is opened, get the values from there, otherwise use queestion marks instead
         good, bad, unknown, total = (len(self.good), len(self.bad), len(self.unknown),
-                                     len(self.wtree.get_children())) if self.vocabulary_filename else (
-            "?", "?", "?", "?")
-        self.good_label["text"] = "Добре: %s" % good
-        self.bad_label["text"] = "Погано: %s" % bad
-        self.unknown_label["text"] = "Не треновано: %s" % unknown
-        self.total_label["text"] = "Усього: %s" % total
+                                     len(self.wtree.get_children())) if self.vocabulary_filename else ("?", ) * 4
+        self.good_label["text"] = "%s: %s" % (LANG["Good"], good)
+        self.bad_label["text"] = "%s: %s" % (LANG["Bad"], bad)
+        self.unknown_label["text"] = "%s: %s" % (LANG["Unknown"], unknown)
+        self.total_label["text"] = "%s: %s" % (LANG["Total"], total)
 
     def validate_wpg(self, P):
         """
@@ -600,11 +601,9 @@ class HomeWindow(Toplevel):
                 udat = open("users.dat", "wb")  # open the users.dat file,
                 pickle.dump(self.users_dict, udat)  # and dump the stats there
             except Exception as details:  # if there is an unexpected problem occurred,
-                while retrycancel2bool(show_msg("Помилка",
-                                                "Не вдалося зберегти users.dat через невідому помилку, тому "
-                                                "статистику не збережено. "
-                                                "Чи не бажаєте повторити?\n\nДеталі: %s (%s)"
-                                                % (details.__class__.__name__, details), icon="error",
+                while retrycancel2bool(show_msg(LANG["error"], LANG["error_users_dat_could_not_save_users_dat_stats"] +
+                                                (LANG["error_details"] % (details.__class__.__name__, details)),
+                                                 icon="error",
                                                 type="retrycancel")):  # while the user asks to retry,
                     try:  # try to
                         with open("users.dat", "wb") as udat:  # open it again,
@@ -617,9 +616,8 @@ class HomeWindow(Toplevel):
             self.deiconify()  # show the window
             self.after(0, self.focus_force)  # set the focus to the window
         else:  # if nothing opened,
-            showerror("Помилка",
-                      "Перед тим, як почати, відкрийте словник."
-                      "\nЩоб створити новий словник, використовуйте Editor.")
+            showinfo(LANG["information"],
+                      LANG["information_open_a_vocabulary"])
 
 
 class GymWindow(Toplevel):
@@ -640,7 +638,7 @@ class GymWindow(Toplevel):
         super().__init__(*args, **kwargs)
 
         self.after(0, self.focus_force)  # set the focus on the GymWindow
-        self.title("Спортзала - PolyglotAssistant 1.00 Trainer")  # set the master window title
+        self.title("%s - PolyglotAssistant 1.00 Trainer" % LANG["Gym"])  # set the master window title
 
         # self.iconbitmap("images/32x32/app_icon.ico")  # show the left-top window icon
 
@@ -666,14 +664,14 @@ class GymWindow(Toplevel):
         self.time_pb.grid(row=1, column=0, columnspan=6, sticky="nsew")  # and grid it
         Button(self, text="⏎", command=self.back).grid(row=2, column=0,
                                                        sticky="ew")  # create and grid the "Back" button
-        Label(self, text="Переклад: ").grid(row=2, column=1,
+        Label(self, text=LANG["translation"]).grid(row=2, column=1,
                                                sticky="ew")  # create and grid the "Translation: " label
         self.translation_entry = Entry(self)  # create the translation entry (where the user enters the translation),
         self.translation_entry.grid(row=2, column=2, sticky="ew")  # and grid it
         self.translation_entry.focus()  # focus on this entry
-        self.ok_button = Button(self, text="ОК", command=self.ok)  # create the "OK" button
+        self.ok_button = Button(self, text="ОK", command=self.ok)  # create the "OK" button
         self.ok_button.grid(row=2, column=3, sticky="ew")  # grid the "OK" button
-        self.skip_button = Button(self, text="Пропустити", command=self.skip)  # create the "Skip" button
+        self.skip_button = Button(self, text=LANG["Skip"], command=self.skip)  # create the "Skip" button
         self.skip_button.grid(row=2, column=4, sticky="ew")  # grid the the "Skip" button
         self.score_label = Label(self)  # create a label that displays score value (answered/totally)
         self.score_label.grid(row=2, column=5, sticky="ew")  # show it using grid geometry manager
@@ -700,7 +698,7 @@ class GymWindow(Toplevel):
         else:  # if the queue is empty,
             self.disable_controls()  # disable the controls
             play_sound("sound/applause.wav")  # play the applause sound
-            self.word_label["text"] = "Ура! Ви закінчили тренування!"  # show the congrats-label instead of a word
+            self.word_label["text"] = LANG["Hooray_Training_Finished"]  # show the congrats-label instead of a word
             self.after(3000, self.back)  # close the Gym
 
     def back(self):
@@ -744,7 +742,7 @@ class GymWindow(Toplevel):
         :return: no value
         :rtype: none
         """
-        if self.is_right_answer() and action == "Час сплив!":  # if the answer is right, and the skip is caused by timeout
+        if self.is_right_answer() and action == LANG["Timeout"]:  # if the answer is right, and the skip is caused by timeout
             self.ok()  # submit the word
         else:  # if the answer is wrong,
             self.score += 1  # increase the score by 1
@@ -753,7 +751,7 @@ class GymWindow(Toplevel):
             self.disable_controls()  # disable controls
             play_sound("sound/skip.wav")  # play the skip sound
             self.time_pb.stop()  # stop the progressbar
-            self.word_label["text"] = "Упс! {} \"{}\" <=> \"{}\"".format(action, *self.pair)  # update the word label
+            self.word_label["text"] = LANG["Oops!"] + " {} \"{}\" <=> \"{}\"".format(action, *self.pair)  # update the word label
             self.disable_controls()  # disable controls
             # If the pair was not add to bad-known list before, add it now
             if (self.pair not in self.new_bad) and (not tuple(reversed(self.pair)) in self.new_bad):
@@ -777,7 +775,7 @@ class GymWindow(Toplevel):
         :rtype: none
         """
         self.after_cancel(self.tg_after)  # cancel the timer after event
-        self._skip("Пропуск?")  # and skip the pair as a skip
+        self._skip(LANG["Skip?"])  # and skip the pair as a skip
 
     def timeout(self):
         """
@@ -786,7 +784,7 @@ class GymWindow(Toplevel):
         :return: no value
         :rtype: none
         """
-        self._skip("Час сплив!")  # skip the pair as a timeout
+        self._skip(LANG["Timeout!"])  # skip the pair as a timeout
 
     def enable_controls(self):
         """
@@ -847,8 +845,7 @@ def show_usage():
     :rtype: none
     """
     Tk().withdraw()  # create and hide the window to avoid the appearance of the blank window on the screen
-    showerror("Помилка", "Ви намагаєтеся запустити цю програму якимось дивним чином."
-                       "\n\nВикористання:\nTrainer.exe vocabulary.pav")
+    showerror(LANG["error"], LANG["error_clargs_Trainer"])
     os._exit(0)  # terminate the process
 
 
