@@ -4,6 +4,7 @@ from tkinter import *
 from tkinter.messagebox import askyesnocancel, showerror, _show as show_msg
 from tkinter.filedialog import askopenfilename
 from tkinter.ttk import Combobox, Scrollbar, Entry, Button, Style
+from collections import OrderedDict
 from io import BytesIO
 import _tkinter
 import functools
@@ -41,15 +42,17 @@ class ReadIt(Tk):
         super().__init__(*args, **kwargs)
         self.text_opened = False  # when application is started, the text
         self.vocabulary_opened = False  # and vocabulary are not opened yet
-        # Vocabulary filename is controlled by the EditorFrame, but the text is controlled by the ReadIt
-        # Set the default text filename, when the text was not opened
-        self.text_filename = LANG["non_opened_filename"]
-        
-        self.protocol("WM_DELETE_WINDOW", self.exit)
-
         self.LANGS_LIST = {value.lower(): key for key, value in
                            googletrans.LANGUAGES.items()
                            }  # create a constant for the languages names in English and their ISO 639-1 codes
+        
+        # Vocabulary filename is controlled by the EditorFrame, but the text is controlled by the ReadIt
+        
+        # Set the default text filename, when the text was not opened
+        self.text_filename = LANG["non_opened_filename"]
+
+        set_window_icon(self)  # set the titlebar icon
+        self.protocol("WM_DELETE_WINDOW", self.exit)
 
         self.hk_man = HKManager(self)
 
@@ -57,12 +60,26 @@ class ReadIt(Tk):
         self.word_variable = StringVar(self)  # create a variable for word to translate
         self.translation_variable = StringVar(self)  # create a variable for translation
 
-        self.vocabulary_editor = EditorFrame(self)  # create a frame for the embedded vocabulary editor
+        self.update_styles()
+        self.create_wgts()
+        self.create_menus()
+        
+        # Create the keys' bindings
+        self.hk_man.add_binding("<Control-O>", self.open_text)
+        self.hk_man.add_binding("<Control-Alt-N>", self.vocabulary_editor.new)
+        self.hk_man.add_binding("<Control-Alt-O>", self.vocabulary_editor.open)
+        self.hk_man.add_binding("<Control-Alt-S>", self.vocabulary_editor.save)
+        self.hk_man.add_binding("<Control-Alt-Shift-S>", self.vocabulary_editor.save_as)
 
-        self.style = Style()
-        self.style.configure("Square.TButton", width=2, height=1)
+        self.load_bookmarks()
+            
+        # if some files are specified to the command-line
+        if text_filename:  # if the text was specified,
+            self.open_text(text_filename=text_filename)  # open it
+        if vocabulary_filename:  # if the vocabulary was specified,
+            self.vocabulary_editor.open(vocabulary_filename=vocabulary_filename)  # open it
 
-        # Create the menus
+    def create_menus(self):
         self.menubar = Menu(self)  # create the main menu
         self.configure(menu=self.menubar)  # attach it to the ReadIt window
 
@@ -99,11 +116,16 @@ class ReadIt(Tk):
         self.helpmenu.add_command(label=LANG["contact_me"], command=contact_me, accelerator="Ctrl+Shift+F1")
         self.menubar.add_cascade(menu=self.helpmenu, label=LANG["help_menu"])  # attach it to the menubar
 
-        set_window_icon(self)  # set the titlebar icon
+    def update_styles(self):
+        self.style = Style()
+        self.style.configure("Square.TButton", width=2, height=1)
 
+    def create_wgts(self):
+        self.vocabulary_editor = EditorFrame(self)  # create a frame for the embedded vocabulary editor
+        
         # let the widgets stretch using grid_columnconfigure method
         self.grid_columnconfigure(0, weight=1)
-
+        
         self.textbox = Text(self, font="Arial 14", wrap="word")  # create the textbox widget,
         self.textbox.grid(row=0, column=0, rowspan=6, sticky="nswe")  # and show it using grid geometry manager
         self.textbox.bind("<Button-3>",
@@ -126,7 +148,8 @@ class ReadIt(Tk):
         self.src_cbox.grid(row=2, column=2)  # show it using grid geometry manager
         self.src_cbox.bind("<<ComboboxSelected>>",
                            self.update_replace_btn)  # and bind the function, that updates "Replace Langs" button, to it
-        self.replace_btn = Button(self, style="Square.TButton", text="⮂", state="disabled",
+        self.replace_img = PhotoImage(file="images/16x16/replace.gif")
+        self.replace_btn = Button(self, style="Square.TButton", image=self.replace_img, state="disabled",
                                   command=self.replace_langs)  # create the "Replace Languages" button,
         self.replace_btn.grid(row=2, column=3)  # and show it using grid geometry manager
         self.dest_cbox = Combobox(self, values=[name.capitalize() for name in self.LANGS_LIST.keys()],
@@ -155,21 +178,21 @@ class ReadIt(Tk):
         controls_frame.grid(row=0, column=2, rowspan=2)
 
         # Create the button to translate the word
-        self.translate_img = PhotoImage(file="images/16x16/translate.png")
+        self.translate_img = PhotoImage(file="images/16x16/translate.gif")
         Button(controls_frame, image=self.translate_img, command=self.translate_word).grid(row=0,
                                                                           column=1)  # create the "Translate" button
-        self.speaker_img = PhotoImage(file="images/16x16/speaker.png")  # load the image for the speaker icon
+        self.speaker_img = PhotoImage(file="images/16x16/speaker.gif")  # load the image for the speaker icon
         # Create two buttons to speak both the word and its translation
         Button(controls_frame, image=self.speaker_img, command=self.speak_word).grid(row=0, column=2)
         Button(controls_frame, image=self.speaker_img, command=self.speak_translation).grid(row=1, column=2)
 
         # Create the label to show the check mark if the translation is checked by community
-        self.checked_img = PhotoImage(file="images/16x16/checked.png")
+        self.checked_img = PhotoImage(file="images/16x16/checked.gif")
         self.checked_label = Label(controls_frame, fg="green")
         self.checked_label.grid(row=1, column=0)
 
         # Create the button to add the current word to the vocabulary
-        self.add_img = PhotoImage(file="images/16x16/add.png")
+        self.add_img = PhotoImage(file="images/16x16/add.gif")
         Button(controls_frame, image=self.add_img, command=lambda: self.vocabulary_editor._add_pair(
             (self.word_variable.get(), self.translation_variable.get()))).grid(row=1, column=1)
         self.grid_rowconfigure(4, weight=1)  # configure the 5-th row's widgets stretch
@@ -177,14 +200,8 @@ class ReadIt(Tk):
                                     sticky="nswe")  # show the vocabulary editor's frame using grid geometry manager
         self.vocabulary_editor.set_saved(True)  # when you start the program, the vocabulary is not changed
 
-        # create the keys' bindings
-        self.hk_man.add_binding("<Control-O>", self.open_text)
-        self.hk_man.add_binding("<Control-Alt-N>", self.vocabulary_editor.new)
-        self.hk_man.add_binding("<Control-Alt-O>", self.vocabulary_editor.open)
-        self.hk_man.add_binding("<Control-Alt-S>", self.vocabulary_editor.save)
-        self.hk_man.add_binding("<Control-Alt-Shift-S>", self.vocabulary_editor.save_as)
-
-        # Read bookmarks
+    def load_bookmarks(self):
+        # Load bookmarks
         self.bookmarks_data = None  # before bookmarks are read, bookmarks_data is None
         try:  # try to
             with open("bookmarks.dat", "rb") as bdata:  # open bookmarks' file (bookmarks.dat)
@@ -194,13 +211,7 @@ class ReadIt(Tk):
         except Exception as details:  # if there is another problem,
             showerror(LANG["error"],
                       LANG["error_load_bookmarks"] + LANG["error_details"] % (details.__class__.__name__, details))  # show the appropriate message
-            
-        # if opening some files using command-line
-        if text_filename:  # if the text was specified,
-            self.open_text(text_filename=text_filename)  # open it
-        if vocabulary_filename:  # if the vocabulary was specified,
-            self.vocabulary_editor.open(vocabulary_filename=vocabulary_filename)  # open it
-
+        
     def open_text(self, _event=None, text_filename=None):
         """Opens a text.
 
@@ -234,6 +245,7 @@ class ReadIt(Tk):
             except Exception as details:  # if there is an error occurred,
                 showerror(LANG["error"], LANG["error_unexpected_opening_file"] + LANG["error_details"] % (
                     details.__class__.__name__, details))  # show the appropriate message
+
 
     def translate_word(self, _event=None):
         """Translates the word or phrase when the user enters something and press Enter key.

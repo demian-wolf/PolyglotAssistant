@@ -433,7 +433,7 @@ class HomeWindow(Toplevel):
         """
         try:  # try to
             # Get the filename
-            if vocabulary_filename:  # if the vocabulary filename was passed (e.g from command-line),
+            if vocabulary_filename:  # if the vocabulary filename was passed to the function
                 filename = vocabulary_filename  # set the filename to this,
             else:  # if the vocabulary filename was not passed,
                 filename = askopenfilename(filetypes=[(LANG["pav_vocabulary_filetype"], ".pav")])  # use the "Open" dialog

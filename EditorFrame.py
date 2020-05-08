@@ -6,7 +6,7 @@ from tkinter.ttk import Treeview, Entry, Scrollbar, Button
 import pickle
 
 from Hotkeys import HKManager
-from utils import yesno2bool, validate_vocabulary_data
+from utils import yesno2bool, open_vocabulary, save_vocabulary
 
 
 
@@ -23,13 +23,12 @@ class EditorFrame(Frame):
         super().__init__(*args, **kwargs)
 
         self.create_wgts()
+        self.hk_man = self.master.hk_man  # TODO: find another solution
+        self.bind_keybindings()
         
         self.saved = False
         self.unsaved_prefix = ""
         self.filename = LANG["non_opened_filename"]  # the default filename is "Untitled"
-
-        self.hk_man = self.master.hk_man  # TODO: find another solution
-        self.bind_keybindings()
 
     def create_wgts(self):
         """
@@ -131,73 +130,16 @@ class EditorFrame(Frame):
         """
 
         if self.can_be_closed():  # if the file can be closed,
-            try:  # try to
-                if vocabulary_filename:  # if a vocabulary filename was specified to this function
-                    vocabulary_file = open(vocabulary_filename, "rb")  # open the vocabulary file
-                else:  # if nothing was specified,
-                    vocabulary_file = askopenfile(mode="rb", filetypes=[(LANG["pav_vocabulary_filetype"],
-                                                                         "*.pav")])  # ask for a .PAV file to open
-            except FileNotFoundError as details:  # if submitted file disappeared suddenly
-                showerror(LANG["error"],
-                          LANG["error_notfound_opening_file"] + (
-                              LANG["error_details"] % (details.__class__.__name__, details)))
-            except PermissionError as details:  # if the access to the file denied
-                showerror(LANG["error"],
-                          LANG["error_permissions_opening_file"] + (
-                              LANG["error_details"] % (details.__class__.__name__, details)))
-            except Exception as details:  # if any other problem happened
-                showerror(LANG["error"],
-                          LANG["error_unexpected_opening_file"] + (
-                              LANG["error_details"] % (details.__class__.__name__, details)))
-            else:  # if all is OK,
-                if vocabulary_file:  # if anything was opened...
-                    try:  # try to
-                        vocabulary_data = pickle.load(vocabulary_file)  # read the vocabulary
-                    except pickle.UnpicklingError as details:  # if the file is damaged, or its format is unsupported
-                        showerror(LANG["error"],
-                                  LANG["error_invalid_opening_file"] + (
-                                      LANG["error_details"] % (details.__class__.__name__, details)))
-                    except Exception as details:  # if unexpected error occurred,
-                        showerror(LANG["error"],
-                                  LANG["error_unexpected_opening_file"] + (
-                                      LANG["error_details"] % (details.__class__.__name__, details)))
-                    else:  # if the file can be decoded,
-                        try:
-                            validate_vocabulary_data(vocabulary_data)  # check its format
-                        except AssertionError:  # if it is invalid,
-                            showerror(LANG["error"], LANG["error_invalid_obj_opening_file"])
-                        else:  # if the file format is OK,
-                            self.wtree.delete(*self.wtree.get_children())  # clear the words-list,
-                            for pair in vocabulary_data:  # and insert the words from opened vocabulary there
-                                self.wtree.insert("", END, values=pair)  # insert every pair
-                            self.update_totally()  # update the "Totally" status bar label
-                            self.set_saved(True)  # set state to saved
-                            self.filename = os.path.abspath(vocabulary_file.name)  # update the filename value
-                            self.master.update_title()  # update the title of the main window
-
-    def _save(self, filename):
-        """
-        Provides save mechanism (that basic operation that is repeated both when saving, and saving as).
-
-        :param filename: the filename of the file where to save
-        :type filename: str
-        :return: no value
-        :rtype: none
-        """
-        try:  # try to
-            outfile = open(filename, "wb")  # try to open a file to write
-            pickle.dump([tuple(map(str, self.wtree.item(child)["values"])) for child in self.wtree.get_children()],
-                        outfile)  # get the vocabulary content and dump it to selected file
-            outfile.close()  # now we can close the outfile
-            self.filename = os.path.abspath(outfile.name)  # update the opened file's filename, if changed
-            self.set_saved(True)  # set state to saved
-        except PermissionError as details:  # if there is a problem with access permissions,
-            showerror(LANG["error"],
-                          LANG["error_permissions_opening_file"] + (
-                              LANG["error_details"] % (details.__class__.__name__, details)))
-        except Exception as details:  # if there is an unexpected problem occurred,
-            showerror(LANG["error"], LANG["error_unexpected_saving_file"] + (
-                              LANG["error_details"] % (details.__class__.__name__, details)))
+            vocabulary = open_vocabulary(vocabulary_filename)
+            if vocabulary:
+                filename, data = vocabulary
+                self.wtree.delete(*self.wtree.get_children())  # clear the words-list,
+                for pair in data:  # and insert the words from opened vocabulary there
+                    self.wtree.insert("", END, values=pair)  # insert every pair
+                self.update_totally()  # update the "Totally" status bar label
+                self.set_saved(True)  # set state to saved
+                self.filename = os.path.abspath(filename)  # update the filename value
+                self.master.update_title()  # update the title of the main window
 
     def save(self, _event=None):
         """

@@ -5,8 +5,6 @@ from tkinter.messagebox import showinfo, showerror
 import os
 import sys
 
-from PIL import Image
-
 from EditorFrame import EditorFrame
 from Hotkeys import HKManager
 from utils import help_, about, contact_me, set_window_icon

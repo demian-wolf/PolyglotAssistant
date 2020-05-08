@@ -1,9 +1,13 @@
 from tkinter import PhotoImage
-from tkinter.messagebox import showinfo
+from tkinter.filedialog import askopenfilename
+from tkinter.messagebox import showerror, showinfo
 import webbrowser
+import pickle
 
 import pygame.mixer
 
+
+exec("from lang.%s import *" % "ua")
 
 pygame.mixer.init()
 
@@ -173,3 +177,69 @@ def set_window_icon(window):
     """
     
     window.iconphoto(True, PhotoImage(master=window, file="images/32x32/app_icon.png"))
+
+def open_vocabulary(vocabulary_filename=None):
+    """
+    Opens the vocabulary.
+    :param vocabulary_filename: the filename of the vocabulary
+    :type vocabulary_filename: str
+    :return: no value
+    :rtype: none
+    """
+    
+    if vocabulary_filename:  # if a vocabulary filename was specified to this function
+        try:
+            vocabulary_file = open(vocabulary_filename, "rb")  # open the vocabulary file
+            if vocabulary_file:
+                vocabulary_data = pickle.load(vocabulary_file)  # read the vocabulary
+                validate_vocabulary_data(vocabulary_data)  # check its format
+                return (vocabulary_file.name, vocabulary_data)
+        except FileNotFoundError as details:  # if submitted file disappeared suddenly
+            showerror(LANG["error"],
+                      LANG["error_notfound_opening_file"] + (
+                          LANG["error_details"] % (details.__class__.__name__, details)))
+        except PermissionError as details:  # if the access to the file denied
+            showerror(LANG["error"],
+                      LANG["error_permissions_opening_file"] + (
+                          LANG["error_details"] % (details.__class__.__name__, details)))
+        except pickle.UnpicklingError as details:  # if the file is damaged, or its format is unsupported
+                        showerror(LANG["error"],
+                                  LANG["error_invalid_opening_file"] + (
+                                      LANG["error_details"] % (details.__class__.__name__, details)))
+        except AssertionError:  # if it is invalid,
+            showerror(LANG["error"], LANG["error_invalid_obj_opening_file"])
+        except Exception as details:  # if any other problem happened
+            showerror(LANG["error"],
+                      LANG["error_unexpected_opening_file"] + (
+                          LANG["error_details"] % (details.__class__.__name__, details)))
+
+    else:  # if nothing was specified
+        return open_vocabulary(askopenfilename(filetypes=[(LANG["pav_vocabulary_filetype"], "*.pav")]))
+
+def save_vocabulary(self, vocabulary_filename=None):
+    """
+    Saves the vocabulary.
+    :param vocabulary_filename: the filename of the vocabulary
+    :type vocabulary_filename: str
+    :return: no value
+    :rtype: none
+    """
+
+    if vocabulary_filename:
+        try:
+            outfile = open(filename, "wb")  # try to open a file to write
+            pickle.dump([tuple(map(str, self.wtree.item(child)["values"])) for child in self.wtree.get_children()],
+                        outfile)  # get the vocabulary content and dump it to selected file
+            outfile.close()  # now we can close the outfile
+            self.filename = os.path.abspath(outfile.name)  # update the opened file's filename, if changed
+            self.set_saved(True)  # set state to saved
+        except PermissionError as details:  # if there is a problem with access permissions,
+            showerror(LANG["error"],
+                          LANG["error_permissions_opening_file"] + (
+                              LANG["error_details"] % (details.__class__.__name__, details)))
+        except Exception as details:  # if there is an unexpected problem occurred,
+            showerror(LANG["error"], LANG["error_unexpected_saving_file"] + (
+                              LANG["error_details"] % (details.__class__.__name__, details)))
+    else:
+        save_vocabulary(asksaveasfilename(filetypes=[(LANG["pav_vocabulary_fileetype"], "*pav")]))
+
