@@ -102,9 +102,10 @@ class ReadIt(Tk):
         self.rem_bookmarksmenu = Menu(self.bookmarksmenu, tearoff=False)  # create the "Remove >" embedded menu
         self.goto_bookmarksmenu = Menu(self.bookmarksmenu, tearoff=False)  # create the "Go to >" nested menu
         self.bookmarksmenu.add_command(label=LANG["bookmarks_add"], command=self.add_bookmark)
-        self.bookmarksmenu.add_cascade(label=LANG["bookmarks_remove"], menu=self.rem_bookmarksmenu)  # attach it to the "Bookmarks" menu
-        self.bookmarksmenu.add_command(label=LANG["bookmarks_clear"], command=self.clear_all_bookmarks)
         self.bookmarksmenu.add_cascade(label=LANG["bookmarks_goto"], menu=self.goto_bookmarksmenu)  # attach it to the "Bookmarks" menu
+        self.bookmarksmenu.add_cascade(label=LANG["bookmarks_remove"],
+                                       menu=self.rem_bookmarksmenu)  # attach it to the "Bookmarks" menu
+        self.bookmarksmenu.add_command(label=LANG["bookmarks_clear"], command=self.clear_all_bookmarks)
         self.menubar.add_cascade(label=LANG["bookmarks_menu"], menu=self.bookmarksmenu)  # attach it to the menubar
         # when the program is started, the "Bookmarks" menu is disabled (because no text file was opened)
         self.menubar.entryconfigure(LANG["bookmarks_menu"], state="disabled")
@@ -385,6 +386,10 @@ class ReadIt(Tk):
             self.text_filename,
             self.vocabulary_editor.unsaved_prefix + self.vocabulary_editor.filename))  # format the title
 
+    def update_bookmarks(self):
+        self.update_bookmarks_menu()  # update the menu entries accroding to the updated bookmarks' list
+        self.update_bookmarks_file()  # update the bookmarks.dat file
+
     def add_bookmark(self):
         """
         Adds a bookmark so the user cannot lose the text position.
@@ -395,8 +400,7 @@ class ReadIt(Tk):
         if not (self.text_filename in self.bookmarks_data):  # if the bookmarks for this file were not added before
             self.bookmarks_data[self.text_filename] = []  # create the bookmarks' list for this file
         self.bookmarks_data[self.text_filename].append(self.textbox.yview()[0])  # add text Y-scroll coords
-        self.update_bookmarks_menu()  # update the menu entries accroding to the updated bookmarks' list
-        self.update_bookmarks_file()  # update the bookmarks.dat file
+        self.update_bookmarks()
 
     def remove_bookmark(self, bookmark):
         """
@@ -409,8 +413,7 @@ class ReadIt(Tk):
         if yesno2bool(show_msg(LANG["warning"], LANG["warning_remove_bookmark"], "warning",
                                "yesno")):  # ask warning about bookmark removal
             self.bookmarks_data[self.text_filename].remove(bookmark)  # if the users says "Yes", remove it
-        self.update_bookmarks_menu()  # update bookmarks_menu
-        self.update_bookmarks_file()  # update the bookmarks.dat file
+        self.update_bookmarks()
 
     def goto_bookmark(self, bookmark):
         """
@@ -430,30 +433,13 @@ class ReadIt(Tk):
         """
         if yesno2bool(show_msg(LANG["warning"], LANG["warning_clear_bookmarks_list"], "warning",
                          "yesno")):  # if the user confirms the clearing
-            del self.bookmarks_data[self.text_filename]  # remove all the bookmarks for the current filename
-        self.update_bookmarks_menu()  # update bookmarks' menu entries
+            if self.text_filename in self.bookmarks_data:
+                del self.bookmarks_data[self.text_filename]  # remove all the bookmarks for the current filename
+                self.update_bookmarks()
 
-    def disable_bookmarks_lst(self):
-        """
-        Disables the bookmarks' menu submenus "Remove >" and "Go to >".
-        It's useful when there aren't any bookmarks attached to the opened file.
-
-        :return: no value
-        :rtype: none
-        """
-        self.bookmarksmenu.entryconfigure(LANG["bookmarks_remove"], state="disabled")  # disable "Remove >" submenu
-        self.bookmarksmenu.entryconfigure(LANG["bookmarks_goto"], state="disabled")  # disable "Go to >" submenu
-
-    def enable_bookmarks_lst(self):
-        """
-        Enables the bookmarks' menu submenus "Remove >" and "Go to >"
-        It's used to enable the "Bookmarks" menu when there are some bookmarks attached to the opened file.
-
-        :return: no value
-        :rtype: none
-        """
-        self.bookmarksmenu.entryconfigure(LANG["bookmarks_remove"], state="normal")  # enable "Remove >" submenu
-        self.bookmarksmenu.entryconfigure(LANG["bookmarks_goto"], state="normal")  # enbale "Go to >" submenu
+    def set_bookmarks_lst_state(self, state):
+        for entry in (LANG["bookmarks_goto"], LANG["bookmarks_remove"], LANG["bookmarks_clear"]):
+            self.bookmarksmenu.entryconfigure(entry, state=state)
 
     def update_bookmarks_menu(self):
         """
@@ -462,23 +448,23 @@ class ReadIt(Tk):
         :return: no value
         :rtype: none
         """
-        if self.text_filename in self.bookmarks_data:  # if filename is in the bookmarks' list
-            if self.bookmarks_data[self.text_filename]:  # if any bookmarks for this file are created
-                self.enable_bookmarks_lst()  # enable bookmarks "Remove >" and "Go to >" submenus
-                self.rem_bookmarksmenu.delete(0, "end")  # clear all the "Remove >" submenu
-                self.goto_bookmarksmenu.delete(0, "end")  # clear all the "Go to >" submenu
-                for no, bookmark in enumerate(self.bookmarks_data[self.text_filename]
-                                              ):  # create the menu entries for the new bookmarks {1; 2; 3...}
-                    self.rem_bookmarksmenu.add_command(label=no + 1, command=functools.partial(self.remove_bookmark,
-                                                                                               bookmark)
-                                                       )  # create the menu entry in the "Remove >" submenu
-                    self.goto_bookmarksmenu.add_command(label=no + 1, command=functools.partial(self.goto_bookmark,
-                                                                                                bookmark)
-                                                        )  # and in the "Go to >" submenu
-            else:  # if there weren't any bookmarks created for this file yet,
-                self.disable_bookmarks_lst()  # disable the "Remove >" and "Go to >" submenus
-        else:  # if the filename was not even in the bookmarks' list
-            self.disable_bookmarks_lst()  # disable the "Remove >" and "Go to >" submenus
+        if self.text_filename not in self.bookmarks_data:  # if filename is in the bookmarks' list
+            self.set_bookmarks_lst_state("disabled")
+            return
+        if not self.bookmarks_data[self.text_filename]:  # if any bookmarks for this file are created
+            self.set_bookmarks_lst_state("disabled")
+            return
+        self.set_bookmarks_lst_state("normal")  # enable bookmarks "Remove >" and "Go to >" submenus
+        self.rem_bookmarksmenu.delete(0, "end")  # clear all the "Remove >" submenu
+        self.goto_bookmarksmenu.delete(0, "end")  # clear all the "Go to >" submenu
+        for no, bookmark in enumerate(self.bookmarks_data[self.text_filename]
+                                      ):  # create the menu entries for the new bookmarks {1; 2; 3...}
+            self.rem_bookmarksmenu.add_command(label=no + 1, command=functools.partial(self.remove_bookmark,
+                                                                                       bookmark)
+                                               )  # create the menu entry in the "Remove >" submenu
+            self.goto_bookmarksmenu.add_command(label=no + 1, command=functools.partial(self.goto_bookmark,
+                                                                                        bookmark)
+                                                )  # and in the "Go to >" submenu
 
     def update_bookmarks_file(self):
         """
@@ -487,21 +473,19 @@ class ReadIt(Tk):
         :return: no value
         :rtype: none
         """
-        try:  # try to
-            with open("bookmarks.dat", "wb") as file:  # open bookmarks.dat for writing
-                pickle.dump(self.bookmarks_data, file)  # update it with new bookmarks
-        except Exception as details:  # if an error occurred, show an appropriate warning and ask to retry
-            while retrycancel2bool(show_msg(LANG["error"], LANG["error_add_bookmark"] +
-                                                           LANG["error_details"] % (details.__class__.__name__,
-                                                                                    details), icon="error",
-                                            type="retrycancel")):  # while user allows to retry,
-                try:  # try to
-                    with open("bookmarks.dat", "wb") as file:  # open the bookmarks.dat file,
-                        pickle.dump(self.bookmarks_data, file)  # dump the updated bookmarks list there
-                except Exception as new_details:  # if something went wrong agin,
-                    details = new_details  # update the error details
-                else:  # if all is OK,
-                    break  # there is no reason to retry again
+
+        while True:
+            try:  # try to
+                with open("bookmarks.dat", "wb") as file:  # open bookmarks.dat for writing
+                    pickle.dump(self.bookmarks_data, file)  # update it with new bookmarks
+            except Exception as details:  # if an error occurred, show an appropriate warning and ask to retry
+                if not retrycancel2bool(show_msg(LANG["error"], LANG["error_add_bookmark"] +
+                                                               LANG["error_details"] % (details.__class__.__name__,
+                                                                                        details), icon="error",
+                                                type="retrycancel")):
+                    break
+            else:
+                break
 
     def can_be_closed(self):
         """
