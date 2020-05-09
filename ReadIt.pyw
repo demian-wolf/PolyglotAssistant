@@ -5,7 +5,6 @@ from tkinter.messagebox import askyesnocancel, showerror, _show as show_msg
 from tkinter.filedialog import askopenfilename
 from tkinter.ttk import Combobox, Scrollbar, Entry, Button, Style
 from collections import OrderedDict
-from io import BytesIO
 import _tkinter
 import functools
 import requests
@@ -14,11 +13,10 @@ import os
 import sys
 
 import googletrans
-import gtts
 
 from EditorFrame import EditorFrame
 from Hotkeys import HKManager
-from utils import yesno2bool, retrycancel2bool, help_, about, contact_me, set_window_icon, play_sound, show_usage
+from utils import yesno2bool, retrycancel2bool, help_, about, contact_me, set_window_icon, play_sound, show_usage, speak
 
 
 # TODO: use another way to select languages
@@ -234,7 +232,7 @@ class ReadIt(Tk):
                     with open(filename) as file:  # open the file for reading,
                         self.textbox.delete("1.0", "end")  # clear the textbox (won't work if couldn't open the file),
                         self.textbox.insert("1.0", file.read())  # and insert the data from the new file
-                        self.text_filename = filename  # update the text_filename attribute,
+                        self.text_filename = os.path.abspath(filename)  # update the text_filename attribute,
                         self.text_opened = True  # text_opened attribute,
                         self.update_title()  # and the title
                         if self.bookmarks_data is not None:  # if the bookmarks.dat was opened without errors),
@@ -316,23 +314,6 @@ class ReadIt(Tk):
         else:  # when it's not,
             self.replace_btn.configure(state="normal")  # it is enabled
 
-    def _speak(self, text, lang):
-        if text.strip():
-            try:
-                tmp_file = BytesIO()
-                gtts.gTTS(text=text, lang=lang).write_to_fp(tmp_file)
-                tmp_file.seek(0)
-                play_sound(tmp_file)
-            except ValueError as details:
-                showerror(LANG["error"],
-                          LANG["error_speak_language_not_supported"] % googletrans.LANGUAGES[str(details).split(": ")[-1]].capitalize())
-            except requests.exceptions.ConnectionError as details:
-                showerror(LANG["error"],
-                          LANG["error_translate_internet_connection_problems"] + LANG["error_details"] % (
-                          details.__class__, details))
-            except Exception as details:
-                showerror(LANG["error"], LANG["error_translate_unexpected"] + LANG["error_details"] % (details.__class__.__name__, details))
-
     def speak_word(self):
         src = self.src_cbox.get().lower()  # get the source language
         if src == "auto":  # if it is not "auto",
@@ -346,11 +327,11 @@ class ReadIt(Tk):
                           (details.__class__.__name__, details))
         else:
             src = self.LANGS_LIST[src]  # get the source language ISO 639-1 representation
-        self._speak(self.word_variable.get(), src)
+        speak(self.word_variable.get(), src)
 
     def speak_translation(self):
         dest = self.LANGS_LIST[self.dest_cbox.get().lower()]  # get the source language
-        self._speak(self.translation_variable.get(), dest)
+        speak(self.translation_variable.get(), dest)
 
     def select_and_translate(self, event):
         """
@@ -361,9 +342,10 @@ class ReadIt(Tk):
         :return: no value
         :rtype: none
         """
+
         try:  # if there is something selected (for phrases mostly),
-            selected_text = self.textbox.get(SEL_FIRST, SEL_LAST).strip()
             start, end = (SEL_FIRST, SEL_LAST)
+            selected_text = self.textbox.get(start, end).strip()
         except _tkinter.TclError:  # if nothing is selected (words only; by right-click)
             start = self.textbox.index('@%s,%s wordstart' % (event.x, event.y))  # get the start position of the word,
             end = self.textbox.index('@%s,%s wordend' % (event.x, event.y))  # and the end position of the word,
@@ -515,7 +497,6 @@ class ReadIt(Tk):
         if self.can_be_closed() and self.vocabulary_editor.can_be_closed():  # if bookmarks added and vocabulary saved,
             self.destroy()  # destroy the ReadIt window
 
-# TODO: fix titles - opened files must have slashes accroding to the OS (Windows - \, Linux&OSX - /)
 # TODO: check sys.argv parsing
 if __name__ == "__main__":
     # Parses the sys.argv (command-line arguments)

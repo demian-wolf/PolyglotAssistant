@@ -1,11 +1,15 @@
 from tkinter import *
 from tkinter.filedialog import askopenfilename
 from tkinter.messagebox import showerror, showinfo
+from io import BytesIO
 import webbrowser
 import pickle
 import os
 
 import pygame.mixer
+import requests
+import googletrans
+import gtts
 
 
 exec("from lang.%s import *" % "ua")
@@ -254,3 +258,21 @@ def show_usage(app):
     Tk().withdraw()  # create and hide a Tk() window (to avoid the blank window appearance on the screen)
     showerror(LANG["error"], LANG["error_clargs_%s" % app])  # show the command-line usage
     os._exit(0)
+
+
+def speak(text, lang):
+    if text.strip():
+        try:
+            tmp_file = BytesIO()
+            gtts.gTTS(text=text, lang=lang).write_to_fp(tmp_file)
+            tmp_file.seek(0)
+            play_sound(tmp_file)
+        except ValueError as details:
+            showerror(LANG["error"],
+                      LANG["error_speak_language_not_supported"] % googletrans.LANGUAGES[str(details).split(": ")[-1]].capitalize())
+        except requests.exceptions.ConnectionError as details:
+            showerror(LANG["error"],
+                      LANG["error_translate_internet_connection_problems"] + LANG["error_details"] % (
+                      details.__class__, details))
+        except Exception as details:
+            showerror(LANG["error"], LANG["error_translate_unexpected"] + LANG["error_details"] % (details.__class__.__name__, details))
