@@ -20,7 +20,7 @@ import sys
 
 from Hotkeys import HKManager
 from utils import yesno2bool, retrycancel2bool, validate_users_dict, validate_vocabulary_data, reverse_pairs, help_, \
-    about, contact_me, tidy_stats, play_sound, set_window_icon
+    about, contact_me, tidy_stats, play_sound, set_window_icon, show_usage
 
 
 exec("from lang.%s import *" % "ua")
@@ -836,19 +836,6 @@ class GymWindow(Toplevel):
 
         self.score_label["text"] = "%s/%s" % (self.score, self.totally)  # format the score label
 
-
-def show_usage():
-    """
-    Shows the usage of the command-line interface.
-
-    :return: no value
-    :rtype: none
-    """
-    Tk().withdraw()  # create and hide the window to avoid the appearance of the blank window on the screen
-    showerror(LANG["error"], LANG["error_clargs_Trainer"])
-    os._exit(0)  # terminate the process
-
-
 if __name__ == "__main__":
     # Check the command-line arguments
     if len(sys.argv) == 1:  # if no command-line arguments specified,
@@ -857,6 +844,6 @@ if __name__ == "__main__":
         if os.path.splitext(sys.argv[-1])[-1] == ".pav":  # if its extension is ".pav" (PolyglotAssistant Vocabulary)
             Trainer(sys.argv[-1].replace("\\", "/")).mainloop()  # create a window, and pass the file arg to opener
         else:  # if the file's extension doesn't looks like a valid PolyglotAssistant Vocabulary file extension
-            show_usage()  # show usage
+            show_usage("Trainer")  # show usage
     else:  # if there are multiple args,
-        show_usage()  # show the command-line interface usage
+        show_usage("Trainer")  # show the command-line interface usage

@@ -1,8 +1,9 @@
-from tkinter import PhotoImage
+from tkinter import *
 from tkinter.filedialog import askopenfilename
 from tkinter.messagebox import showerror, showinfo
 import webbrowser
 import pickle
+import os
 
 import pygame.mixer
 
@@ -243,3 +244,13 @@ def save_vocabulary(self, vocabulary_filename=None):
     else:
         save_vocabulary(asksaveasfilename(filetypes=[(LANG["pav_vocabulary_fileetype"], "*pav")]))
 
+def show_usage(app):
+    """
+    Shows the command-line usage, if called.
+
+    :return: no value
+    :rtype: none
+    """
+    Tk().withdraw()  # create and hide a Tk() window (to avoid the blank window appearance on the screen)
+    showerror(LANG["error"], LANG["error_clargs_%s" % app])  # show the command-line usage
+    os._exit(0)

@@ -1,13 +1,11 @@
 #!/usr/bin/python3
 
 from tkinter import *
-from tkinter.messagebox import showinfo, showerror
-import os
 import sys
 
 from EditorFrame import EditorFrame
 from Hotkeys import HKManager
-from utils import help_, about, contact_me, set_window_icon
+from utils import help_, about, contact_me, set_window_icon, show_usage
 
 
 exec("from lang.%s import LANG" % "ua")
@@ -128,19 +126,6 @@ class Editor(Tk):
         self.title("%s%s - PolyglotAssistant 1.00 Editor" % (self.vocabulary_editor.unsaved_prefix,
                                                              self.vocabulary_editor.filename))
 
-
-def show_usage():
-    """
-    Shows the usage of the command-line interface.
-
-    :return: no value
-    :rtype: none
-    """
-    
-    Tk().withdraw()  # creates and hides a dummy window (otherwise, an empty window is shown with the message)
-    showerror("Error", LANG["error_clargs_Editor"])  # displays the error
-
-
 if __name__ == "__main__":
     # Processes the sys.argv list (command-line arguments list)
     if len(sys.argv) == 1:  # if no arguments specified,
@@ -148,4 +133,4 @@ if __name__ == "__main__":
     elif len(sys.argv) == 2:  # if a file was specified,
         Editor(vocabulary_filename=sys.argv[-1]).mainloop()  # open the vocabulary
     else:  # if there were multiple arguments specified,
-        show_usage()  # show usage
+        show_usage("Editor")  # show usage

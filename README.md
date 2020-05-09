@@ -8,7 +8,7 @@ Currently the app is in Ukrainian only but I'm translating it to other languages
 
 ## Usage
 1) Download/clone this repository.
-2) Open its directory in command-line
+2) Open its directory in the command-line
 3) Enter **pip install -r requirements.txt**
 4) Run Editor.pyw (vocabulary editor), ReadIt.pyw (all-in-one book reader with translator and vocaulary editor) or Trainer.pyw (to train words from an existing vocabulary).
 5) Enjoy! :)

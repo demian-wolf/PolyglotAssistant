@@ -18,7 +18,7 @@ import gtts
 
 from EditorFrame import EditorFrame
 from Hotkeys import HKManager
-from utils import yesno2bool, retrycancel2bool, help_, about, contact_me, set_window_icon, play_sound
+from utils import yesno2bool, retrycancel2bool, help_, about, contact_me, set_window_icon, play_sound, show_usage
 
 
 # TODO: use another way to select languages
@@ -211,8 +211,8 @@ class ReadIt(Tk):
             self.bookmarks_data = {}  # bookmarks_data is an empty dict, where user can add bookmarks
         except Exception as details:  # if there is another problem,
             showerror(LANG["error"],
-                      LANG["error_load_bookmarks"] + LANG["error_details"] % (details.__class__.__name__, details))  # show the appropriate message
-        
+                      LANG["error_load_bookmarks"] + LANG["error_details"] % (details.__class__.__name__, details))
+
     def open_text(self, _event=None, text_filename=None):
         """Opens a text.
 
@@ -231,7 +231,7 @@ class ReadIt(Tk):
                 else:  # if opening from the ReadIt,
                     filename = askopenfilename()  # get the filename
                 if filename:  # if user didn't click "Cancel" button or closed the dialog for opening the file
-                    with open(filename, "r") as file:  # open the file for reading,
+                    with open(filename) as file:  # open the file for reading,
                         self.textbox.delete("1.0", "end")  # clear the textbox (won't work if couldn't open the file),
                         self.textbox.insert("1.0", file.read())  # and insert the data from the new file
                         self.text_filename = filename  # update the text_filename attribute,
@@ -240,13 +240,13 @@ class ReadIt(Tk):
                         if self.bookmarks_data is not None:  # if the bookmarks.dat was opened without errors),
                             self.menubar.entryconfig(LANG["bookmarks_menu"], state="normal")  # enable "Bookmarks menu"
                             self.update_bookmarks_menu()  # updates the bookmarks menu entries as in the opened file
+            # TODO: add FileNotFoundError and PermissionError
             except UnicodeDecodeError as details:  # if the file has unsupported encoding,
                 showerror(LANG["error"],
                           LANG["error_text_encoding"] + LANG["error_details"] % (details.__class__.__name__, details))
             except Exception as details:  # if there is an error occurred,
                 showerror(LANG["error"], LANG["error_unexpected_opening_file"] + LANG["error_details"] % (
                     details.__class__.__name__, details))  # show the appropriate message
-
 
     def translate_word(self, _event=None):
         """Translates the word or phrase when the user enters something and press Enter key.
@@ -494,6 +494,7 @@ class ReadIt(Tk):
         :return: no value
         :rtype: none
         """
+
         if self.text_opened and self.bookmarks_data is not None:  # if text was opened and bookmarks were not disabled
             result = askyesnocancel(LANG["bookmarks_add"],
                                     LANG["warning_add_bookmark_before_continue"])  # ask user to add a bookmark
@@ -513,18 +514,6 @@ class ReadIt(Tk):
         """
         if self.can_be_closed() and self.vocabulary_editor.can_be_closed():  # if bookmarks added and vocabulary saved,
             self.destroy()  # destroy the ReadIt window
-
-
-def show_usage():
-    """
-    Shows the command-line usage, if called.
-
-    :return: no value
-    :rtype: none
-    """
-    Tk().withdraw()  # create and hide a Tk() window (to avoid the blank window appearance on the screen)
-    showerror(LANG["error"], LANG["error_clargs_ReadIt"])  # show the command-line usage
-    os._exit(0)  # terminate the application process
 
 # TODO: fix titles - opened files must have slashes accroding to the OS (Windows - \, Linux&OSX - /)
 # TODO: check sys.argv parsing
@@ -547,9 +536,9 @@ if __name__ == "__main__":
                 vocabulary_filename = fexts.pop(".pav")  # the ".pav"-ending filename belongs to a vocabulary,
                 text_filename = list(fexts.values())[-1]  # the other one belongs to a text file
             else:  # if there is no vocabulary (i.e. two texts),
-                show_usage()  # show the command-line usage
+                show_usage("ReadIt")  # show the command-line usage
         else:  # if more than two files specified,
-            show_usage()  # show the command-line usage
+            show_usage("ReadIt")  # show the command-line usage
         ReadIt(text_filename, vocabulary_filename).mainloop()  # open the specified files
     else:  # if no files passed in command line,
         ReadIt().mainloop()  # create the ReadIt window and start its mainloop.
