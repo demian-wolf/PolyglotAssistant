@@ -1,7 +1,8 @@
-from tkinter.ttk import Entry
+import tkinter.ttk as ttk
 
 
-class Spinbox(Entry):
+class Spinbox(ttk.Entry):
+    """A workaround for ttk.Spinbox on some versions of Python."""
 
     def __init__(self, master=None, **kwargs):
         super().__init__(master, "ttk::spinbox", **kwargs)
