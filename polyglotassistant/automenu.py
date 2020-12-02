@@ -42,7 +42,7 @@ class AutoMenu(tk.Menu):
                 current.add_command(label=label, command=command,
                                     underline=underline,
                                     accelerator=accelerator)
-            # TODO: bind to the accelerator as well
+                # TODO: bind the command to the accelerator
         return current
 
 if __name__ == "__main__":
@@ -52,7 +52,8 @@ if __name__ == "__main__":
                     "*Menu.background": "#EFF0F1",
                     "*Menu.activeBorderWidth": 0,
                     "*Menu.borderWidth": 1,
-                    "*Menu.tearOff": False}
+                    "*Menu.tearOff": False,
+                    "*Menu.relief": "flat"}
 
     for option, value in MENU_OPTIONS.items():
         root.option_add(option, value)
