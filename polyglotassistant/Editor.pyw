@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
-from tkinter import *
+import tkinter as tk
+import tkinter.ttk as ttk
 import sys
 
 from EditorFrame import EditorFrame

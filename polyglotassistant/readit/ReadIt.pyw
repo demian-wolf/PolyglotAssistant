@@ -77,44 +77,6 @@ class ReadIt(Tk):
         if vocabulary_filename:  # if the vocabulary was specified,
             self.vocabulary_editor.open(vocabulary_filename=vocabulary_filename)  # open it
 
-    def create_menus(self):
-        self.menubar = Menu(self)  # create the main menu
-        self.configure(menu=self.menubar)  # attach it to the ReadIt window
-
-        self.filemenu = Menu(self.menubar, tearoff=False)  # create the "File" menu and add the appropriate entries
-        self.filemenu.add_command(label=LANG["open_text"], command=self.open_text, accelerator="Ctrl+O")
-        self.filemenu.add_separator()
-        self.filemenu.add_command(label=LANG["new_vocabulary"], command=self.vocabulary_editor.new, accelerator="Ctrl+Alt+N")
-        self.filemenu.add_command(label=LANG["open_vocabulary"], command=self.vocabulary_editor.open,
-                                  accelerator="Ctrl+Alt+O")
-        self.filemenu.add_command(label=LANG["save_vocabulary"], command=self.vocabulary_editor.save,
-                                  accelerator="Ctrl+Alt+S")
-        self.filemenu.add_command(label=LANG["saveas_vocabulary"], command=self.vocabulary_editor.save_as,
-                                  accelerator="Ctrl+Alt+Shift+S")
-        self.filemenu.add_separator()
-        self.filemenu.add_command(label=LANG["exit"], command=self.exit, accelerator="Alt+F4")
-        self.menubar.add_cascade(label=LANG["file_menu"], menu=self.filemenu)  # attach it to the menubar
-
-        self.bookmarksmenu = Menu(self.menubar,
-                                  tearoff=False)  # create the "Bookmarks" menu and add the appropriate entries
-        self.rem_bookmarksmenu = Menu(self.bookmarksmenu, tearoff=False)  # create the "Remove >" embedded menu
-        self.goto_bookmarksmenu = Menu(self.bookmarksmenu, tearoff=False)  # create the "Go to >" nested menu
-        self.bookmarksmenu.add_command(label=LANG["bookmarks_add"], command=self.add_bookmark)
-        self.bookmarksmenu.add_cascade(label=LANG["bookmarks_goto"], menu=self.goto_bookmarksmenu)  # attach it to the "Bookmarks" menu
-        self.bookmarksmenu.add_cascade(label=LANG["bookmarks_remove"],
-                                       menu=self.rem_bookmarksmenu)  # attach it to the "Bookmarks" menu
-        self.bookmarksmenu.add_command(label=LANG["bookmarks_clear"], command=self.clear_all_bookmarks)
-        self.menubar.add_cascade(label=LANG["bookmarks_menu"], menu=self.bookmarksmenu)  # attach it to the menubar
-        # when the program is started, the "Bookmarks" menu is disabled (because no text file was opened)
-        self.menubar.entryconfigure(LANG["bookmarks_menu"], state="disabled")
-
-        self.helpmenu = Menu(self.menubar, tearoff=False)  # create the "Help" menu and add the appropriate entries
-        self.helpmenu.add_command(label=LANG["call_help"], command=help_, accelerator="F1")
-        self.helpmenu.add_separator()
-        self.helpmenu.add_command(label=LANG["about_pa"], command=about, accelerator="Ctrl+F1")
-        self.helpmenu.add_command(label=LANG["contact_me"], command=contact_me, accelerator="Ctrl+Shift+F1")
-        self.menubar.add_cascade(menu=self.helpmenu, label=LANG["help_menu"])  # attach it to the menubar
-
     def update_styles(self):
         self.style = Style()
         self.style.configure("Square.TButton", width=2, height=1)
