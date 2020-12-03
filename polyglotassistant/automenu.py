@@ -45,7 +45,7 @@ class AutoMenu(tk.Menu):
                 # TODO: bind the command to the accelerator
         return current
 
-if __name__ == "__main__":
+def _test():
     root = tk.Tk()
 
     MENU_OPTIONS = {"*Menu.activeBackground": "#3DAEE9",
@@ -62,3 +62,6 @@ if __name__ == "__main__":
     root.config(menu=menubar)
 
     root.mainloop()
+
+if __name__ == "__main__":
+    _test()
