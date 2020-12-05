@@ -48,16 +48,6 @@ class AutoMenu(tk.Menu):
 def _test():
     root = tk.Tk()
 
-    MENU_OPTIONS = {"*Menu.activeBackground": "#3DAEE9",
-                    "*Menu.background": "#EFF0F1",
-                    "*Menu.activeBorderWidth": 0,
-                    "*Menu.borderWidth": 1,
-                    "*Menu.tearOff": False,
-                    "*Menu.relief": "flat"}
-
-    for option, value in MENU_OPTIONS.items():
-        root.option_add(option, value)
-
     menubar = AutoMenu(root, menus.MENUBAR)
     root.config(menu=menubar)
 
